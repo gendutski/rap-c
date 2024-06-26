@@ -1,3 +1,5 @@
+![LOGO](storage/public-asset/images/logo.png)
+
 # rap-c: Recipe and Price Calculator
 
 Selamat datang di `rap-c`, aplikasi yang dirancang untuk memudahkan pengelolaan resep, menghitung harga pokok penjualan, mengelola stok bahan baku, dan menyimpan catatan transaksi dalam general ledger sederhana.

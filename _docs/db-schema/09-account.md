@@ -17,7 +17,7 @@ Tabel ini untuk mencatat semua akun yang digunakan dalam buku besar
 ```sql
 CREATE TABLE accounts (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
-    `name` VARCHAR(11) UNIQUE KEY NOT NULL,
+    `name` VARCHAR(100) UNIQUE KEY NOT NULL,
     `type` ENUM('asset', 'liability', 'equity', 'revenue', 'expense') NOT NULL,
     `balance` DECIMAL(10,2) NOT NULL DEFAULT '0',
     `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -6,7 +6,7 @@ Tabel ini untuk mencatat semua transaksi, dan akan digunakan dalam laporan keuan
 |------------------|-------------------------|-----------------------------|
 | id               | INT                     | Primary Key, Auto Increment |
 | account_id       | INT                     | Foreign Key ke tabel [accounts](09-account.md) |
-| transaction_type | ENUM('debit', 'credit') | Tipe dari transaksi         |
+| type             | ENUM('debit', 'credit') | Tipe dari transaksi         |
 | amount           | DECIMAL(10,2)           | Nilai transaksi             |
 | description      | TEXT                    | Deskripsi singkat transaksi |
 | created_at       | TIMESTAMP               | Tanggal pembuatan transaksi |
@@ -17,7 +17,7 @@ Tabel ini untuk mencatat semua transaksi, dan akan digunakan dalam laporan keuan
 CREATE TABLE transactions (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `account_id` INT NOT NULL,
-    `transaction_type` ENUM('debit', 'credit') NOT NULL,
+    `type` ENUM('debit', 'credit') NOT NULL,
     `amount` DECIMAL(10,2) NOT NULL DEFAULT '0',
     `description` TEXT NOT NULL,
     `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,

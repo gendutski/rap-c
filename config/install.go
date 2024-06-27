@@ -16,7 +16,9 @@ import (
 func GenerateDotEnv() {
 	var rows []string
 	for desc, itm := range map[string]interface{}{
-		"# mysql database environment": database{},
+		"# main config environment":            Config{},
+		"# mysql database environment":         database{},
+		"# first user auto insert environment": FirstUser{},
 	} {
 		rows = append(rows, desc)
 		rows = append(rows, readStruct(reflect.TypeOf(itm))...)

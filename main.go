@@ -23,12 +23,13 @@ func main() {
 }
 
 func serve() {
+	cfg := config.GetConfig()
 	db := config.Connect()
 
 	// auto migrate db
-	// if cfg.AutoMigrateDB {
-	migrateDB(db)
-	// }
+	if cfg.AutoMigrateDB {
+		migrateDB(db)
+	}
 }
 
 func migrateDB(db *gorm.DB) {

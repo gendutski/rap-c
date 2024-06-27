@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -54,7 +55,8 @@ func Connect() *gorm.DB {
 		Logger: logger.Default.LogMode(logger.LogLevel(dbConfig.LogMode)),
 	})
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	// set configuration pooling connection

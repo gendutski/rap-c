@@ -20,13 +20,17 @@ func GenerateDotEnv() {
 		"# mysql database environment":         database{},
 		"# first user auto insert environment": FirstUser{},
 	} {
+		if len(rows) > 0 {
+			desc = "\n" + desc
+		}
 		rows = append(rows, desc)
 		rows = append(rows, readStruct(reflect.TypeOf(itm))...)
 	}
 	text := strings.Join(rows, "\n")
 	err := os.WriteFile(".env", []byte(text), 0644)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
 
@@ -71,7 +75,7 @@ func readStruct(elm reflect.Type) []string {
 		if scan == "" && _default != "" {
 			scan = _default
 		}
-		result = append(result, fmt.Sprintf("%s=%s", envconfig, scan))
+		result = append(result, fmt.Sprintf("%s=\"%s\"", envconfig, strings.ReplaceAll(scan, `"`, "")))
 	}
 	return result
 }

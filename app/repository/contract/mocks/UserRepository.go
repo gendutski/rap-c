@@ -48,3 +48,62 @@ func (mr *MockUserRepositoryMockRecorder) Create(ctx, user interface{}) *gomock.
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockUserRepository)(nil).Create), ctx, user)
 }
+
+// GetTotalUsersByRequest mocks base method.
+func (m *MockUserRepository) GetTotalUsersByRequest(ctx context.Context, req *entity.GetUserListRequest) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTotalUsersByRequest", ctx, req)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTotalUsersByRequest indicates an expected call of GetTotalUsersByRequest.
+func (mr *MockUserRepositoryMockRecorder) GetTotalUsersByRequest(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTotalUsersByRequest", reflect.TypeOf((*MockUserRepository)(nil).GetTotalUsersByRequest), ctx, req)
+}
+
+// GetUserByField mocks base method.
+func (m *MockUserRepository) GetUserByField(ctx context.Context, fieldName string, fieldValue interface{}) (*entity.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserByField", ctx, fieldName, fieldValue)
+	ret0, _ := ret[0].(*entity.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserByField indicates an expected call of GetUserByField.
+func (mr *MockUserRepositoryMockRecorder) GetUserByField(ctx, fieldName, fieldValue interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByField", reflect.TypeOf((*MockUserRepository)(nil).GetUserByField), ctx, fieldName, fieldValue)
+}
+
+// GetUsersByRequest mocks base method.
+func (m *MockUserRepository) GetUsersByRequest(ctx context.Context, req *entity.GetUserListRequest) ([]*entity.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUsersByRequest", ctx, req)
+	ret0, _ := ret[0].([]*entity.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUsersByRequest indicates an expected call of GetUsersByRequest.
+func (mr *MockUserRepositoryMockRecorder) GetUsersByRequest(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersByRequest", reflect.TypeOf((*MockUserRepository)(nil).GetUsersByRequest), ctx, req)
+}
+
+// Update mocks base method.
+func (m *MockUserRepository) Update(ctx context.Context, user *entity.User) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", ctx, user)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockUserRepositoryMockRecorder) Update(ctx, user interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUserRepository)(nil).Update), ctx, user)
+}

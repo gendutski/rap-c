@@ -7,6 +7,11 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+const (
+	RequestShowActive    string = "active"
+	RequestShowNotActive string = "not active"
+)
+
 // table users model
 type User struct {
 	ID                 int       `gorm:"primaryKey" json:"-"`
@@ -46,4 +51,40 @@ func (e CreateUserPayload) Validate(validate *validator.Validate) []string {
 		}
 	}
 	return messages
+}
+
+// attempt to login payload
+type AttemptLoginPayload struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
+}
+
+// will validate payload, and return slice of error messages or nil
+func (e AttemptLoginPayload) Validate(validate *validator.Validate) []string {
+	err := validate.Struct(e)
+	var messages []string
+	if err != nil {
+		for _, v := range err.(validator.ValidationErrors) {
+			switch v.Tag() {
+			case "required":
+				messages = append(messages, fmt.Sprintf("field `%s` is required", v.Field()))
+			case "email":
+				messages = append(messages, "invalid email")
+			}
+		}
+	}
+	return messages
+}
+
+// bind struct for get user list request
+type GetUserListRequest struct {
+	UserName        string     `query:"userName" json:"userName"`
+	Email           string     `query:"email" json:"email"`
+	FullName        string     `query:"fullName" json:"fullName"`
+	Role            string     `query:"role" json:"role"`
+	Show            string     `query:"show" json:"show"`
+	SortField       string     `query:"sortField" json:"sortField"`
+	DescendingOrder bool       `query:"descendingOrder" json:"descendingOrder"`
+	Limit           int        `query:"limit" json:"limit"`
+	Page            Pagination `query:"page" json:"page"`
 }

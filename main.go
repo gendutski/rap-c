@@ -6,10 +6,18 @@ import (
 	"log"
 	"os"
 	"rap-c/app/entity"
+	"rap-c/app/handler/api"
+	"rap-c/app/handler/middleware"
 	"rap-c/app/helper"
+	usermodule "rap-c/app/module/user-module"
+	userrepository "rap-c/app/repository/mysql/user-repository"
 	"rap-c/config"
+	"rap-c/route"
+	"regexp"
 	"time"
 
+	"github.com/labstack/echo/v4"
+	echomiddleware "github.com/labstack/echo/v4/middleware"
 	"gorm.io/gorm"
 )
 
@@ -26,11 +34,53 @@ func main() {
 }
 
 func serve() {
+	// load config & connect db
 	cfg := config.GetConfig()
 	db := config.Connect()
 
 	// auto migrate db
 	migrateDB(db, cfg.EnableGuestLogin)
+
+	// load mysql repositories
+	userRepo := userrepository.New(db)
+
+	// load modules
+	userUsecase := usermodule.NewUsecase(cfg, userRepo)
+
+	// load api
+	userAPI := api.NewUserHandler(cfg, userUsecase)
+
+	// init echo
+	e := echo.New()
+
+	e.Debug = cfg.EnableDebug
+	// custom http error handler
+	e.HTTPErrorHandler = func(err error, c echo.Context) {
+		reg := regexp.MustCompile("^" + route.ApiGroup)
+		if reg.MatchString(c.Request().RequestURI) {
+			route.APIErrorHandler(e, err, c)
+		} else {
+			e.DefaultHTTPErrorHandler(err, c)
+		}
+	}
+	// set general middleware
+	e.Use(middleware.SetLog(cfg.EnableWarnFileLog))
+	e.Use(echomiddleware.Recover())
+	e.Use(echomiddleware.TimeoutWithConfig(echomiddleware.TimeoutConfig{
+		ErrorMessage: "request timeout",
+		Timeout:      time.Second * 30,
+	}))
+
+	// set route
+	route.SetAPIRoute(e, route.APIHandler{
+		JwtUserContextKey: cfg.JwtUserContextKey,
+		JwtSecret:         cfg.JwtSecret,
+		UserModule:        userUsecase,
+		UserAPI:           userAPI,
+	})
+
+	// run server
+	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", cfg.Port)))
 }
 
 func migrateDB(db *gorm.DB, enableGuestLogin bool) {

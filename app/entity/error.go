@@ -32,6 +32,7 @@ const (
 	GeneratePasswordError      int    = 50002
 	ValidateTokenDBError       int    = 50003
 	AttemptLoginError          int    = 50003
+	GetAuthorFromJwtError      int    = 50004
 )
 
 // for echo.HTTPError.Internal

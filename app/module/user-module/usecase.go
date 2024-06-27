@@ -21,7 +21,7 @@ const (
 	tokenStrEmail string = "email"
 )
 
-type UserModule interface {
+type UserUsecase interface {
 	// create user
 	Create(ctx context.Context, payload *entity.CreateUserPayload, author *entity.User) (*entity.User, error)
 	// attempt to login with email and password
@@ -32,7 +32,7 @@ type UserModule interface {
 	ValidateJwtToken(ctx context.Context, token *jwt.Token, guestAccepted bool) (*entity.User, error)
 }
 
-func NewUsecase(cfg config.Config, userRepo contract.UserRepository) UserModule {
+func NewUsecase(cfg config.Config, userRepo contract.UserRepository) UserUsecase {
 	return &usecase{cfg, userRepo}
 }
 

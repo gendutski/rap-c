@@ -17,7 +17,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func initUsecase(ctrl *gomock.Controller, cfg config.Config) (usermodule.UserModule, *repomocks.MockUserRepository) {
+func initUsecase(ctrl *gomock.Controller, cfg config.Config) (usermodule.UserUsecase, *repomocks.MockUserRepository) {
 	userRepo := repomocks.NewMockUserRepository(ctrl)
 	uc := usermodule.NewUsecase(cfg, userRepo)
 	return uc, userRepo

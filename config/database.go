@@ -14,18 +14,18 @@ import (
 
 // mysql config
 type database struct {
-	Host                  string `envconfig:"MYSQL_HOST" default:"localhost"`
-	Port                  string `envconfig:"MYSQL_PORT" default:"3306"`
-	DBName                string `envconfig:"MYSQL_DB_NAME" default:"fin_track"`
-	Username              string `envconfig:"MYSQL_USERNAME" default:""`
-	Password              string `envconfig:"MYSQL_PASSWORD" default:""`
-	LogMode               int    `envconfig:"MYSQL_LOG_MODE" default:"0"`
-	ParseTime             bool   `envconfig:"MYSQL_PARSE_TIME" default:"true"`
-	Charset               string `envconfig:"MYSQL_CHARSET" default:"utf8mb4"`
-	Loc                   string `envconfig:"MYSQL_LOC" default:"Local"`
-	MaxLifetimeConnection int    `envconfig:"MYSQL_MAX_LIFETIME_CONNECTION" default:"10"`
-	MaxOpenConnection     int    `envconfig:"MYSQL_MAX_OPEN_CONNECTION" default:"50"`
-	MaxIdleConnection     int    `envconfig:"MYSQL_MAX_IDLE_CONNECTION" default:"10"`
+	Host                  string `envconfig:"MYSQL_HOST" default:"localhost" prompt:"Enter mysql host"`
+	Port                  string `envconfig:"MYSQL_PORT" default:"3306" prompt:"Enter mysql port"`
+	DBName                string `envconfig:"MYSQL_DB_NAME" default:"rap_c" prompt:"Enter database name"`
+	Username              string `envconfig:"MYSQL_USERNAME" default:"" prompt:"Enter mysql username"`
+	Password              string `envconfig:"MYSQL_PASSWORD" default:"" prompt:"Enter mysql password" secret:"true"`
+	LogMode               int    `envconfig:"MYSQL_LOG_MODE" default:"1" prompt:"Enter gorm log mode 1-4"`
+	ParseTime             bool   `envconfig:"MYSQL_PARSE_TIME" default:"true" prompt:"Parse mysql time to local"`
+	Charset               string `envconfig:"MYSQL_CHARSET" default:"utf8mb4" prompt:"Enter mysql database charset"`
+	Loc                   string `envconfig:"MYSQL_LOC" default:"Local" prompt:"Enter mysql local time"`
+	MaxLifetimeConnection int    `envconfig:"MYSQL_MAX_LIFETIME_CONNECTION" default:"10" prompt:"Enter mysql maximum amount of time a connection may be reused, in minute"`
+	MaxOpenConnection     int    `envconfig:"MYSQL_MAX_OPEN_CONNECTION" default:"50" prompt:"Enter mysql maximum number of open connections to the database"`
+	MaxIdleConnection     int    `envconfig:"MYSQL_MAX_IDLE_CONNECTION" default:"10" prompt:"Enter mysql maximum number of connections in the idle connection pool"`
 }
 
 func Connect() *gorm.DB {

@@ -1,0 +1,50 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rap-C :: 401 - Unauthorized</title>
+    <link href="/assets/css/sb-admin-2.min.css" rel="stylesheet" />
+
+    <style type="text/css">
+      #error{
+        background-color:#DFC7B6;
+        min-height:100vh;
+        padding:2rem 0
+      }
+
+      #error .img-error{
+        height:400px;
+        -o-object-fit:contain;
+        object-fit:contain;
+        padding:3rem 0
+      }
+
+      #error .error-title{
+        font-size:3rem;
+        margin-top:1rem
+      }
+      
+    </style>
+</head>
+
+<body>
+    <div id="error">
+        <div class="error-page container">
+            <div class="col-md-8 col-12 offset-md-2">
+                <div class="text-center">
+                  <h1 class="error-title">Unauthorized</h1>
+                  <img class="img-error" src="/assets/images/unauthorized.png" alt="Unauthorized" />
+                    <p class="fs-5 text-capitalize">
+                        You must login before access this page.
+                    </p>
+                    <a href="/login" class="btn btn-lg btn-outline-dark mt-3">Go Login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

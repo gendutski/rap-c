@@ -1,6 +1,7 @@
 package web
 
 import (
+	"errors"
 	"net/http"
 	"rap-c/app/entity"
 	"rap-c/app/helper"
@@ -37,6 +38,18 @@ type userHandler struct {
 }
 
 func (h *userHandler) Login(e echo.Context) error {
+	// init router
+	routeMap := helper.RouteMap(e.Echo().Routes())
+	authorizedPathRedirect := routeMap.Get(entity.DefaultAuthorizedRouteRedirect, "path")
+
+	// check if token session is exists
+	ctx := e.Request().Context()
+	_, err := h.userModule.ValidateSessionJwtToken(ctx, e.Request(), e.Response(), h.store, h.cfg.EnableGuestLogin)
+	if err == nil {
+		return e.Redirect(http.StatusMovedPermanently, authorizedPathRedirect)
+	}
+
+	// no authorized user, load login page
 	sess, err := helper.NewSession(e.Request(), e.Response(), h.store, loginSessionName)
 	if err != nil {
 		return &echo.HTTPError{
@@ -46,9 +59,8 @@ func (h *userHandler) Login(e echo.Context) error {
 		}
 	}
 
-	routeMap := helper.RouteMap(e.Echo().Routes())
+	// get email has been inputed from prev login page
 	var emailValue string
-
 	if _val, ok := sess.Flash("email").(string); ok {
 		emailValue = _val
 	}
@@ -74,7 +86,7 @@ func (h *userHandler) PostLogin(e echo.Context) error {
 	// map route
 	routeMap := helper.RouteMap(e.Echo().Routes())
 	loginPathRedirect := routeMap.Get(entity.LoginRouteName, "path")
-	profilePathRedirect := routeMap.Get(entity.ProfileRouteName, "path")
+	authorizedPathRedirect := routeMap.Get(entity.DefaultAuthorizedRouteRedirect, "path")
 
 	// bind payload
 	payload := new(entity.AttemptLoginPayload)
@@ -117,13 +129,37 @@ func (h *userHandler) PostLogin(e echo.Context) error {
 	}
 	tokenSess.Set(entity.TokenSessionName, token)
 
-	return e.Redirect(http.StatusMovedPermanently, profilePathRedirect)
+	return e.Redirect(http.StatusMovedPermanently, authorizedPathRedirect)
 }
 
 func (h *userHandler) PostLogout(e echo.Context) error {
-	return e.NoContent(http.StatusNotFound)
+	// init session
+	sess, err := helper.NewSession(e.Request(), e.Response(), h.store, entity.SessionID)
+	if err != nil {
+		return &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  entity.SessionErrorMessage,
+			Internal: entity.NewInternalError(entity.SessionError, err.Error()),
+		}
+	}
+	sess.Destroy()
+
+	// map route
+	routeMap := helper.RouteMap(e.Echo().Routes())
+	loginPathRedirect := routeMap.Get(entity.LoginRouteName, "path")
+
+	// redirect
+	return e.Redirect(http.StatusMovedPermanently, loginPathRedirect)
 }
 
 func (h *userHandler) Profile(e echo.Context) error {
-	return e.JSON(http.StatusOK, map[string]interface{}{"user": e.Get(h.cfg.JwtUserContextKey)})
+	// return e.JSON(http.StatusOK, map[string]interface{}{"user": e.Get(h.cfg.JwtUserContextKey)})
+	user, ok := e.Get(h.cfg.JwtUserContextKey).(*entity.User)
+	if !ok {
+		return errors.New("invalid user")
+	}
+
+	return e.Render(http.StatusOK, "profile.html", map[string]interface{}{
+		"user": user,
+	})
 }

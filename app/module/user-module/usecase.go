@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
@@ -30,6 +31,8 @@ type UserUsecase interface {
 	GenerateJwtToken(ctx context.Context, user *entity.User) (string, error)
 	// validate jwt token into user
 	ValidateJwtToken(ctx context.Context, token *jwt.Token, guestAccepted bool) (*entity.User, error)
+	// validate jwt token from session
+	ValidateSessionJwtToken(ctx context.Context, r *http.Request, w http.ResponseWriter, store sessions.Store, guestAccepted bool) (*entity.User, error)
 }
 
 func NewUsecase(cfg config.Config, userRepo contract.UserRepository) UserUsecase {
@@ -168,43 +171,34 @@ func (uc *usecase) ValidateJwtToken(ctx context.Context, token *jwt.Token, guest
 	if !ok {
 		return nil, errors.New("failed to cast claims as jwt.MapClaims")
 	}
+	// get user from claims
+	return uc.getUserFromJwtClaims(ctx, claims, guestAccepted)
+}
 
-	// get user
-	user, err := uc.userRepo.GetUserByField(ctx, "id", claims[tokenStrID])
+func (uc *usecase) ValidateSessionJwtToken(ctx context.Context, r *http.Request, w http.ResponseWriter, store sessions.Store, guestAccepted bool) (*entity.User, error) {
+	// get token from session
+	sess, err := helper.NewSession(r, w, store, entity.SessionID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// user not found
-			return nil, &echo.HTTPError{
-				Code:     http.StatusUnauthorized,
-				Message:  entity.ValidateTokenUserNotFoundMessage,
-				Internal: entity.NewInternalError(entity.ValidateTokenUserNotFound, entity.ValidateTokenUserNotFoundMessage),
-			}
-		}
-		// internal database error
 		return nil, &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
-			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.ValidateTokenDBError, err.Error()),
+			Message:  entity.SessionErrorMessage,
+			Internal: entity.NewInternalError(entity.SessionError, err.Error()),
 		}
 	}
-
-	// check user
-	if user.Username != claims[tokenStrName].(string) || user.Email != claims[tokenStrEmail].(string) || user.Disabled {
-		return nil, &echo.HTTPError{
-			Code:     http.StatusUnauthorized,
-			Message:  entity.ValidateTokenUserNotMatchMessage,
-			Internal: entity.NewInternalError(entity.ValidateTokenUserNotMatch, entity.ValidateTokenUserNotMatchMessage),
-		}
+	tokenStr, ok := sess.Get(entity.TokenSessionName).(string)
+	if !ok {
+		return nil, echo.NewHTTPError(http.StatusUnauthorized)
 	}
 
-	// if guest not accepted
-	if !guestAccepted && user.IsGuest {
-		return nil, &echo.HTTPError{
-			Code:     http.StatusForbidden,
-			Message:  entity.ValidateTokenGuestNotAcceptedMessage,
-			Internal: entity.NewInternalError(entity.ValidateTokenGuestNotAccepted, entity.ValidateTokenGuestNotAcceptedMessage),
-		}
+	// parse token
+	claims := jwt.MapClaims{}
+	token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(uc.cfg.JwtSecret), nil
+	})
+	if err != nil || !token.Valid {
+		return nil, echo.NewHTTPError(http.StatusUnauthorized)
 	}
 
-	return user, nil
+	// get user from claims
+	return uc.getUserFromJwtClaims(ctx, claims, guestAccepted)
 }

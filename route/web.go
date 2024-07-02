@@ -47,13 +47,13 @@ func SetWebRoute(e *echo.Echo, h *WebHandler) {
 	// all login user group
 	allLoginRole := e.Group(
 		"",
-		middleware.ValidateJwtTokenFromSession(h.Store, []byte(h.JwtSecret), h.JwtUserContextKey, h.UserModule, h.GuestAccepted),
+		middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserModule, h.GuestAccepted),
 	)
 
 	// non guest only group
 	nonGuestOnly := e.Group(
 		"",
-		middleware.ValidateJwtTokenFromSession(h.Store, []byte(h.JwtSecret), h.JwtUserContextKey, h.UserModule, false),
+		middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserModule, false),
 	)
 
 	// user api
@@ -79,6 +79,9 @@ func WebErrorHandler(e *echo.Echo, err error, c echo.Context) {
 
 	if report.Code == http.StatusNotFound {
 		c.Render(http.StatusNotFound, "404.html", nil)
+		return
+	} else if report.Code == http.StatusUnauthorized {
+		c.Render(http.StatusUnauthorized, "401.html", nil)
 		return
 	}
 	c.Render(http.StatusInternalServerError, "500.html", map[string]interface{}{"message": report.Message})

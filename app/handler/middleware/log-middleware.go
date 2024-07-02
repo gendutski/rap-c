@@ -12,6 +12,7 @@ import (
 )
 
 const (
+	storagePath    string = "storage"
 	logPath        string = "log"
 	errorLogFile   string = "error.log"
 	warningLogFile string = "warning.log"
@@ -36,7 +37,7 @@ func SetLog(enableWarnFileLog bool) echo.MiddlewareFunc {
 				}).Info("request")
 			} else {
 				// create error log file
-				errorLog, err := os.OpenFile(filepath.Join(logPath, errorLogFile), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+				errorLog, err := os.OpenFile(filepath.Join(storagePath, logPath, errorLogFile), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 				if err != nil {
 					logger.Errorf("Failed to create error file hook: %v", err)
 				} else {
@@ -50,7 +51,7 @@ func SetLog(enableWarnFileLog bool) echo.MiddlewareFunc {
 
 				// create warning log file
 				if enableWarnFileLog {
-					warnLog, err := os.OpenFile(filepath.Join(logPath, warningLogFile), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+					warnLog, err := os.OpenFile(filepath.Join(storagePath, logPath, warningLogFile), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 					if err != nil {
 						logger.Errorf("Failed to create warning file hook: %v", err)
 					} else {

@@ -13,7 +13,7 @@ const (
 	jwtContextKey string = "userToken"
 )
 
-func SetJWT(jwtSecret []byte) echo.MiddlewareFunc {
+func GetJWT(jwtSecret []byte) echo.MiddlewareFunc {
 	return echojwt.WithConfig(echojwt.Config{
 		SigningKey: jwtSecret,
 		ContextKey: jwtContextKey,

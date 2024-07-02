@@ -10,6 +10,8 @@ import (
 const (
 	RequestShowActive    string = "active"
 	RequestShowNotActive string = "not active"
+	SessionID            string = "SESSION_ID"
+	TokenSessionName     string = "token"
 )
 
 // table users model
@@ -55,8 +57,8 @@ func (e CreateUserPayload) Validate(validate *validator.Validate) []string {
 
 // attempt to login payload
 type AttemptLoginPayload struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required"`
+	Email    string `json:"email" form:"email" validate:"required,email"`
+	Password string `json:"password" form:"password" validate:"required"`
 }
 
 // will validate payload, and return slice of error messages or nil

@@ -15,10 +15,12 @@ const (
 )
 
 type Config struct {
-	Port              int  `envconfig:"HTTP_PORT" default:"8080" prompt:"Enter port to serve http"`
-	EnableDebug       bool `envconfig:"ENABLE_DEBUG" default:"false" prompt:"Enable debug to show error received"`
-	EnableWarnFileLog bool `envconfig:"ENABLE_WARN_FILE_LOG" default:"false" prompt:"Enable log for warning type error (eg: http bad request error)"`
-	EnableGuestLogin  bool `envconfig:"ENABLE_GUEST_LOGIN" default:"false" prompt:"Enable guest login"`
+	Port               int    `envconfig:"HTTP_PORT" default:"8080" prompt:"Enter port to serve http"`
+	EnableDebug        bool   `envconfig:"ENABLE_DEBUG" default:"false" prompt:"Enable debug to show error received"`
+	EnableWarnFileLog  bool   `envconfig:"ENABLE_WARN_FILE_LOG" default:"false" prompt:"Enable log for warning type error (eg: http bad request error)"`
+	EnableGuestLogin   bool   `envconfig:"ENABLE_GUEST_LOGIN" default:"false" prompt:"Enable guest login"`
+	AutoReloadTemplate bool   `envconfig:"AUTO_RELOAD_TEMPLATE" default:"false" prompt:"Auto reload template (not recommended for production)"`
+	SessionKey         string `envconfig:"SESSION_KEY" default:"session secret" prompt:"Enter http session key secret"`
 
 	// jwt
 	JwtSecret              string `envconfig:"JWT_SECRET" default:"secret" prompt:"Enter secret to generate JWT token"`

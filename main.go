@@ -8,6 +8,7 @@ import (
 	"rap-c/app/entity"
 	"rap-c/app/handler/api"
 	"rap-c/app/handler/middleware"
+	"rap-c/app/handler/web"
 	"rap-c/app/helper"
 	usermodule "rap-c/app/module/user-module"
 	userrepository "rap-c/app/repository/mysql/user-repository"
@@ -16,6 +17,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	"gorm.io/gorm"
@@ -47,8 +49,14 @@ func serve() {
 	// load modules
 	userUsecase := usermodule.NewUsecase(cfg, userRepo)
 
-	// load api
+	// load api handler
 	userAPI := api.NewUserHandler(cfg, userUsecase)
+
+	// load session store
+	sessionStore := sessions.NewCookieStore([]byte(cfg.SessionKey))
+
+	// load web handler
+	userWeb := web.NewUserPage(cfg, sessionStore, userUsecase)
 
 	// init echo
 	e := echo.New()
@@ -60,7 +68,7 @@ func serve() {
 		if reg.MatchString(c.Request().RequestURI) {
 			route.APIErrorHandler(e, err, c)
 		} else {
-			e.DefaultHTTPErrorHandler(err, c)
+			route.WebErrorHandler(e, err, c)
 		}
 	}
 	// set general middleware
@@ -71,13 +79,30 @@ func serve() {
 		Timeout:      time.Second * 30,
 	}))
 
-	// set route
-	route.SetAPIRoute(e, route.APIHandler{
+	// set API route
+	route.SetAPIRoute(e, &route.APIHandler{
 		JwtUserContextKey: cfg.JwtUserContextKey,
 		JwtSecret:         cfg.JwtSecret,
+		GuestAccepted:     cfg.EnableGuestLogin,
 		UserModule:        userUsecase,
 		UserAPI:           userAPI,
 	})
+	// set web page route
+	route.SetWebRoute(e, &route.WebHandler{
+		JwtUserContextKey: cfg.JwtUserContextKey,
+		JwtSecret:         cfg.JwtSecret,
+		GuestAccepted:     cfg.EnableGuestLogin,
+		UserModule:        userUsecase,
+		UserPage:          userWeb,
+		Store:             sessionStore,
+	})
+
+	// set template renderer
+	var err error
+	e.Renderer, err = config.NewRenderer(cfg.AutoReloadTemplate)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// run server
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", cfg.Port)))

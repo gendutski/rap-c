@@ -23,7 +23,7 @@ type APIHandler struct {
 	UserAPI           api.UserAPI
 }
 
-func SetAPIRoute(e *echo.Echo, h APIHandler) {
+func SetAPIRoute(e *echo.Echo, h *APIHandler) {
 	// api group
 	apiGroup := e.Group(ApiGroup)
 
@@ -33,14 +33,14 @@ func SetAPIRoute(e *echo.Echo, h APIHandler) {
 	// all login user group
 	allLoginRole := apiGroup.Group(
 		"",
-		middleware.SetJWT([]byte(h.JwtSecret)),
+		middleware.GetJWT([]byte(h.JwtSecret)),
 		middleware.GetUserFromJWT(h.JwtUserContextKey, h.UserModule, h.GuestAccepted),
 	)
 
 	// non guest only group
 	nonGuestOnly := apiGroup.Group(
 		"",
-		middleware.SetJWT([]byte(h.JwtSecret)),
+		middleware.GetJWT([]byte(h.JwtSecret)),
 		middleware.GetUserFromJWT(h.JwtUserContextKey, h.UserModule, false),
 	)
 

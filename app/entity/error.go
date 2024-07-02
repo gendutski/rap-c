@@ -33,6 +33,8 @@ const (
 	ValidateTokenDBError       int    = 50003
 	AttemptLoginError          int    = 50003
 	GetAuthorFromJwtError      int    = 50004
+	SessionError               int    = 50099
+	SessionErrorMessage        string = "session error"
 )
 
 // for echo.HTTPError.Internal

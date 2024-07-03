@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/golang/mock/gomock"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -170,5 +171,33 @@ func Test_AttemptLogin(t *testing.T) {
 		})
 		assert.Equal(t, http.StatusBadRequest, err.(*echo.HTTPError).Code)
 		assert.Nil(t, res)
+	})
+}
+
+func Test_GenerateJwtToken(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	cfg := config.Config{
+		JwtSecret: "secret",
+	}
+	uc, _ := initUsecase(ctrl, cfg)
+	ctx := context.Background()
+	t.Run("success", func(t *testing.T) {
+
+		tokenStr, err := uc.GenerateJwtToken(ctx, &entity.User{
+			ID:       1,
+			Username: "gendutski",
+			Email:    "mvp.firman.darmawan@gmail.com",
+		})
+
+		assert.Nil(t, err)
+
+		// parse token
+		claims := jwt.MapClaims{}
+		jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
+			return []byte(cfg.JwtSecret), nil
+		})
+		assert.Equal(t, float64(1), claims["id"])
+		assert.Equal(t, "gendutski", claims["userName"])
+		assert.Equal(t, "mvp.firman.darmawan@gmail.com", claims["email"])
 	})
 }

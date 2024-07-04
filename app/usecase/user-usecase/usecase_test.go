@@ -215,9 +215,10 @@ func Test_RenewPassword(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		user := entity.User{
-			ID:       1,
-			Username: "gendutski",
-			Password: encrypted,
+			ID:                 1,
+			Username:           "gendutski",
+			Password:           encrypted,
+			PasswordMustChange: true,
 		}
 
 		pass := "Tr!al123#"
@@ -229,13 +230,15 @@ func Test_RenewPassword(t *testing.T) {
 		})
 		assert.Nil(t, err)
 		assert.True(t, helper.ValidateEncryptedPassword(user.Password, pass))
+		assert.False(t, user.PasswordMustChange)
 	})
 
 	t.Run("failed, password not match", func(t *testing.T) {
 		user := entity.User{
-			ID:       1,
-			Username: "gendutski",
-			Password: encrypted,
+			ID:                 1,
+			Username:           "gendutski",
+			Password:           encrypted,
+			PasswordMustChange: true,
 		}
 
 		pass := "Tr!al123#"
@@ -248,9 +251,10 @@ func Test_RenewPassword(t *testing.T) {
 
 	t.Run("failed, password not changed", func(t *testing.T) {
 		user := entity.User{
-			ID:       1,
-			Username: "gendutski",
-			Password: encrypted,
+			ID:                 1,
+			Username:           "gendutski",
+			Password:           encrypted,
+			PasswordMustChange: true,
 		}
 
 		err := uc.RenewPassword(ctx, &user, &entity.RenewPasswordPayload{

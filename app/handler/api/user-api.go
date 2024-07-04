@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"rap-c/app/entity"
+	"rap-c/app/handler"
 	"rap-c/app/usecase/contract"
 	"rap-c/config"
 
@@ -15,16 +16,24 @@ type UserAPI interface {
 	Create(e echo.Context) error
 	// post login
 	Login(e echo.Context) error
+	// renew password
+	RenewPassword(e echo.Context) error
 }
 
 func NewUserHandler(cfg config.Config, userUsecase contract.UserUsecase, mailUsecase contract.MailUsecase) UserAPI {
-	return &userHandler{cfg, userUsecase, mailUsecase}
+	return &userHandler{
+		cfg:         cfg,
+		userUsecase: userUsecase,
+		mailUsecase: mailUsecase,
+		BaseHandler: handler.NewBaseHandler(cfg),
+	}
 }
 
 type userHandler struct {
 	cfg         config.Config
 	userUsecase contract.UserUsecase
 	mailUsecase contract.MailUsecase
+	BaseHandler *handler.BaseHandler
 }
 
 func (h *userHandler) Create(e echo.Context) error {
@@ -36,14 +45,9 @@ func (h *userHandler) Create(e echo.Context) error {
 	ctx := e.Request().Context()
 
 	// get author
-	_author := e.Get(h.cfg.JwtUserContextKey)
-	author, ok := _author.(*entity.User)
-	if !ok {
-		return &echo.HTTPError{
-			Code:     http.StatusInternalServerError,
-			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.GetAuthorFromJwtError, "failed type assertion author"),
-		}
+	author, err := h.BaseHandler.GetAuthor(e)
+	if err != nil {
+		return err
 	}
 
 	// create user
@@ -98,4 +102,26 @@ func (h *userHandler) Login(e echo.Context) error {
 		"token": token,
 		"user":  user,
 	})
+}
+
+func (h *userHandler) RenewPassword(e echo.Context) error {
+	payload := new(entity.RenewPasswordPayload)
+	err := e.Bind(payload)
+	if err != nil {
+		return err
+	}
+	ctx := e.Request().Context()
+
+	// get author
+	author, err := h.BaseHandler.GetAuthor(e)
+	if err != nil {
+		return err
+	}
+
+	err = h.userUsecase.RenewPassword(ctx, author, payload)
+	if err != nil {
+		return err
+	}
+
+	return e.JSON(http.StatusOK, map[string]interface{}{"status": "ok"})
 }

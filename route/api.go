@@ -30,6 +30,11 @@ func SetAPIRoute(e *echo.Echo, h *APIHandler) {
 	// non login routes
 	apiGroup.POST("/login", h.UserAPI.Login)
 
+	// renew password routes
+	apiGroup.PUT("/renew-password", h.UserAPI.RenewPassword,
+		middleware.GetJWT([]byte(h.JwtSecret)),
+		middleware.GetUserFromJWT(h.JwtUserContextKey, h.UserUsecase, false))
+
 	// all login user group
 	allLoginRole := []echo.MiddlewareFunc{
 		middleware.GetJWT([]byte(h.JwtSecret)),
@@ -45,19 +50,19 @@ func SetAPIRoute(e *echo.Echo, h *APIHandler) {
 	}
 
 	// user api
-	h.setUserAPI(e, allLoginRole, nonGuestOnly)
+	h.setUserAPI(apiGroup, allLoginRole, nonGuestOnly)
 }
 
-func (h *APIHandler) setUserAPI(e *echo.Echo, allLoginRole []echo.MiddlewareFunc, nonGuestOnly []echo.MiddlewareFunc) {
+func (h *APIHandler) setUserAPI(apiGroup *echo.Group, allLoginRole []echo.MiddlewareFunc, nonGuestOnly []echo.MiddlewareFunc) {
 	// all user
-	e.GET("/user/detail/:username", echo.NotFoundHandler, allLoginRole...)
-	e.GET("/user/list", echo.NotFoundHandler, allLoginRole...)
-	e.GET("/user/total", echo.NotFoundHandler, allLoginRole...)
+	apiGroup.GET("/user/detail/:username", echo.NotFoundHandler, allLoginRole...)
+	apiGroup.GET("/user/list", echo.NotFoundHandler, allLoginRole...)
+	apiGroup.GET("/user/total", echo.NotFoundHandler, allLoginRole...)
 
 	// non guest
-	e.POST("/user/create", h.UserAPI.Create, nonGuestOnly...)
-	e.PUT("/user/update", echo.NotFoundHandler, nonGuestOnly...)
-	e.PUT("/user/active-status", echo.NotFoundHandler, nonGuestOnly...)
+	apiGroup.POST("/user/create", h.UserAPI.Create, nonGuestOnly...)
+	apiGroup.PUT("/user/update", echo.NotFoundHandler, nonGuestOnly...)
+	apiGroup.PUT("/user/active-status", echo.NotFoundHandler, nonGuestOnly...)
 }
 
 // error handler

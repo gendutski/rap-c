@@ -211,6 +211,7 @@ func (uc *usecase) RenewPassword(ctx context.Context, user *entity.User, payload
 		return err
 	}
 	user.Password = encryptedPass
+	user.PasswordMustChange = false
 	user.UpdatedBy = user.Username
 
 	// save

@@ -2,6 +2,7 @@ package mailusecase
 
 import (
 	"net/http"
+	"net/url"
 	"rap-c/app/entity"
 	"rap-c/app/usecase/contract"
 	"rap-c/config"
@@ -26,10 +27,16 @@ func (uc *usecase) Welcome(user *entity.User, password string) error {
 	// init hermes
 	h := uc.initHermes()
 
+	// encode email & password
+	params := url.Values{}
+	params.Add("email", user.Email)
+	params.Add("password", password)
+
 	// init hermes email
 	email := hermes.Email{
 		Body: hermes.Body{
-			Name: user.FullName,
+			Greeting: "Hai",
+			Name:     user.FullName,
 			Intros: []string{
 				"Selamat datang di `rap-c`, aplikasi yang dirancang untuk memudahkan pengelolaan resep, menghitung harga pokok penjualan, mengelola stok bahan baku, dan menyimpan catatan transaksi dalam general ledger sederhana.",
 				"Anda telah diajukan menjadi user di aplikasi ini, dengan detail sebagai berikut:",
@@ -44,7 +51,7 @@ func (uc *usecase) Welcome(user *entity.User, password string) error {
 					Instructions: "Silahkan klik tombol dibawah untuk login:",
 					Button: hermes.Button{
 						Text: "Login menggunakan akun anda",
-						Link: uc.cfg.URL(entity.WebLoginPath),
+						Link: uc.cfg.URL(entity.WebLoginPath) + "?" + params.Encode(),
 					},
 				},
 			},

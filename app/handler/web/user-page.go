@@ -54,14 +54,19 @@ func (h *userHandler) Login(e echo.Context) error {
 	// load session
 	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.EnableWarnFileLog)
 
-	// get email has been inputed from prev login page
-	var emailValue string
-	if _val, ok := sess.Flash("email").(string); ok {
-		emailValue = _val
+	// get email has been inputed in query params or from prev login page
+	emailValue := e.QueryParam("email")
+	if emailValue == "" {
+		if _val, ok := sess.Flash("email").(string); ok {
+			emailValue = _val
+		}
 	}
+	// get password inputed in query params
+	passValue := e.QueryParam("password")
 
 	return e.Render(http.StatusOK, "login.html", map[string]interface{}{
 		"emailValue":      emailValue,
+		"passwordValue":   passValue,
 		"loginFormMethod": routeMap.Get(entity.PostLoginRouteName, "method"),
 		"loginFormAction": routeMap.Get(entity.PostLoginRouteName, "path"),
 	})

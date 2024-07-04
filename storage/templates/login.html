@@ -12,17 +12,21 @@
     <title>Rap-C - Login</title>
 
     <!-- Custom fonts for this template-->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" rel="stylesheet"
+        type="text/css">
     <link
         href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
         rel="stylesheet">
+
+    <!-- vendor css -->
+    <link href="/assets/vendor/toastify-js/toastify.min.css" rel="stylesheet" type="text/css">
 
     <!-- Custom styles for this template-->
     <link href="/assets/css/sb-admin-2.min.css" rel="stylesheet">
 
 </head>
 
-<body style="background-color: #aa8463;" >
+<body style="background-color: #aa8463;">
 
     <div class="container">
 
@@ -45,16 +49,18 @@
                                         <div class="form-group">
                                             <input type="email" class="form-control form-control-user"
                                                 id="exampleInputEmail" aria-describedby="emailHelp"
-                                                placeholder="Masukkan alamat email..." name="email" value="{{.emailValue}}" required>
+                                                placeholder="Masukkan alamat email..." name="email"
+                                                value="{{.emailValue}}" required>
                                         </div>
                                         <div class="form-group">
                                             <input type="password" class="form-control form-control-user"
-                                                id="exampleInputPassword" placeholder="Password" name="password" 
+                                                id="exampleInputPassword" placeholder="Password" name="password"
                                                 value="{{.passwordValue}}" required>
                                         </div>
                                         <div class="form-group">
                                             <div class="custom-control custom-checkbox small">
-                                                <input type="checkbox" class="custom-control-input" id="rememberMe" name="remember">
+                                                <input type="checkbox" class="custom-control-input" id="rememberMe"
+                                                    name="remember">
                                                 <label class="custom-control-label" for="customCheck">Remember
                                                     Me</label>
                                             </div>
@@ -80,8 +86,9 @@
             </div>
 
         </div>
-
     </div>
+
+    <div id="errorBox" style="display: none;">{{.loginError}}</div>
 
     <!-- Bootstrap core JavaScript-->
     <script src="/assets/vendor/jquery/jquery.min.js"></script>
@@ -90,8 +97,35 @@
     <!-- Core plugin Ja/assets/vaScript-->
     <script src="/assets/vendor/jquery-easing/jquery.easing.min.js"></script>
 
+    <!-- toastify js -->
+    <script src="/assets/vendor/toastify-js/toastify.min.js"></script>
+
     <!-- Custom scripts for all pages-->
     <script src="/assets/js/sb-admin-2.min.js"></script>
+
+    <script>
+        function toastFail(message) {
+            Toastify({
+                text: message,
+                duration: 3000,
+                close: true,
+                gravity: "top",
+                position: "right",
+                style: {
+                    background: "linear-gradient(to right, #7d4832, #2c1c19)"
+                }
+            }).showToast();
+        }
+
+        const loginError = JSON.parse(document.getElementById("errorBox").innerHTML);
+        $(function () {
+            if (loginError.length > 0) {
+                for (let i = 0; i < loginError.length; i++) {
+                    toastFail(loginError[i])
+                }
+            }
+        });
+    </script>
 
 </body>
 

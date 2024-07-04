@@ -1,6 +1,7 @@
 package web
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"rap-c/app/entity"
@@ -64,9 +65,25 @@ func (h *userHandler) Login(e echo.Context) error {
 	// get password inputed in query params
 	passValue := e.QueryParam("password")
 
+	// get submit login error
+	var loginErr []string
+	var loginError []byte = []byte("[]")
+	if _loginErr := sess.Flash("error"); _loginErr != nil {
+		switch _val := _loginErr.(type) {
+		case []string:
+			loginErr = append(loginErr, _val...)
+		case string:
+			loginErr = append(loginErr, _val)
+		}
+	}
+	if len(loginErr) > 0 {
+		loginError, _ = json.Marshal(loginErr)
+	}
+
 	return e.Render(http.StatusOK, "login.html", map[string]interface{}{
 		"emailValue":      emailValue,
 		"passwordValue":   passValue,
+		"loginError":      string(loginError),
 		"loginFormMethod": routeMap.Get(entity.PostLoginRouteName, "method"),
 		"loginFormAction": routeMap.Get(entity.PostLoginRouteName, "path"),
 	})
@@ -94,7 +111,7 @@ func (h *userHandler) PostLogin(e echo.Context) error {
 	if err != nil {
 		if herr, ok := err.(*echo.HTTPError); ok {
 			sess.Set("email", e.FormValue("email"))
-			sess.Set("erorr", herr.Message)
+			sess.Set("error", herr.Message)
 			return e.Redirect(http.StatusMovedPermanently, loginPathRedirect)
 		}
 		return err
@@ -105,7 +122,7 @@ func (h *userHandler) PostLogin(e echo.Context) error {
 	if err != nil {
 		if herr, ok := err.(*echo.HTTPError); ok {
 			sess.Set("email", e.FormValue("email"))
-			sess.Set("erorr", herr.Message)
+			sess.Set("error", herr.Message)
 			return e.Redirect(http.StatusMovedPermanently, loginPathRedirect)
 		}
 		return err

@@ -1,8 +1,11 @@
 package entity
 
 const (
-	WebLoginPath string = "/login"
+	// path
+	WebLoginPath          string = "/login"
+	WebPasswordChangePath string = "/password-change"
 
+	// route
 	LoginRouteName      string = "loginPage"
 	PostLoginRouteName  string = "submitLogin"
 	PostLogoutRouteName string = "submitLogout"

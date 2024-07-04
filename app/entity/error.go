@@ -25,6 +25,8 @@ const (
 	// forbidden
 	ValidateTokenGuestNotAccepted        int    = 40301
 	ValidateTokenGuestNotAcceptedMessage string = "this page cannot accessed by guest"
+	PasswordMustBeChanged                int    = 40302
+	PasswordMustBeChangedMessage         string = "password must be changed"
 
 	// internal error
 	CreateUserError               int    = 50001

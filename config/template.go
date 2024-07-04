@@ -28,11 +28,12 @@ type Templates struct {
 
 func NewRenderer(autoReloadTemplate bool) (*Renderer, error) {
 	keys := map[string][]string{
-		"401.html":     {"401.html"},
-		"404.html":     {"404.html"},
-		"500.html":     {"500.html"},
-		"login.html":   {"login.html"},
-		"profile.html": {"profile.html"},
+		"401.html":          {"401.html"},
+		"404.html":          {"404.html"},
+		"error.html":        {"error.html"},
+		"login.html":        {"login.html"},
+		"pass-changer.html": {"pass-changer.html"},
+		"profile.html":      {"profile.html"},
 	}
 
 	templates, err := loadTemplates(keys)

@@ -44,28 +44,31 @@ func SetWebRoute(e *echo.Echo, h *WebHandler) {
 	e.POST("/submit-login", h.UserPage.PostLogin).Name = entity.PostLoginRouteName
 	e.POST("/submit-logout", h.UserPage.PostLogout).Name = entity.PostLogoutRouteName
 
+	// password must change
+	e.GET(entity.WebPasswordChangePath, h.UserPage.PasswordChanger, middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserModule, h.GuestAccepted))
+
 	// all login user group
-	allLoginRole := e.Group(
-		"",
+	allLoginRole := []echo.MiddlewareFunc{
 		middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserModule, h.GuestAccepted),
-	)
+		middleware.PasswordNotChanged(h.JwtUserContextKey, false),
+	}
 
 	// non guest only group
-	nonGuestOnly := e.Group(
-		"",
+	nonGuestOnly := []echo.MiddlewareFunc{
 		middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserModule, false),
-	)
+		middleware.PasswordNotChanged(h.JwtUserContextKey, false),
+	}
 
 	// user api
-	h.setUserWebPage(allLoginRole, nonGuestOnly)
+	h.setUserWebPage(e, allLoginRole, nonGuestOnly)
 }
 
-func (h *WebHandler) setUserWebPage(allLoginRole *echo.Group, nonGuestOnly *echo.Group) {
+func (h *WebHandler) setUserWebPage(e *echo.Echo, allLoginRole []echo.MiddlewareFunc, nonGuestOnly []echo.MiddlewareFunc) {
 	// all user
-	allLoginRole.GET("/profile", h.UserPage.Profile).Name = entity.ProfileRouteName
+	e.GET("/profile", h.UserPage.Profile, allLoginRole...).Name = entity.ProfileRouteName
 
 	// non guest
-	nonGuestOnly.GET("/user", echo.NotFoundHandler)
+	e.GET("/user", echo.NotFoundHandler, nonGuestOnly...)
 }
 
 func WebErrorHandler(e *echo.Echo, err error, c echo.Context) {
@@ -84,5 +87,9 @@ func WebErrorHandler(e *echo.Echo, err error, c echo.Context) {
 		c.Render(http.StatusUnauthorized, "401.html", nil)
 		return
 	}
-	c.Render(http.StatusInternalServerError, "500.html", map[string]interface{}{"message": report.Message})
+	c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
+		"code":    report.Code,
+		"title":   http.StatusText(report.Code),
+		"message": report.Message,
+	})
 }

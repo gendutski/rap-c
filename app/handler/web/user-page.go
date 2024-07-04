@@ -23,6 +23,8 @@ type UserPage interface {
 	PostLogin(e echo.Context) error
 	// post logout
 	PostLogout(e echo.Context) error
+	// password must change page
+	PasswordChanger(e echo.Context) error
 	// profile page
 	Profile(e echo.Context) error
 }
@@ -124,8 +126,15 @@ func (h *userHandler) PostLogout(e echo.Context) error {
 	return e.Redirect(http.StatusMovedPermanently, loginPathRedirect)
 }
 
+func (h *userHandler) PasswordChanger(e echo.Context) error {
+	user, ok := e.Get(h.cfg.JwtUserContextKey).(*entity.User)
+	if !ok {
+		return errors.New("invalid user")
+	}
+	return e.Render(http.StatusOK, "pass-changer.html", map[string]interface{}{"emailValue": user.Email})
+}
+
 func (h *userHandler) Profile(e echo.Context) error {
-	// return e.JSON(http.StatusOK, map[string]interface{}{"user": e.Get(h.cfg.JwtUserContextKey)})
 	user, ok := e.Get(h.cfg.JwtUserContextKey).(*entity.User)
 	if !ok {
 		return errors.New("invalid user")

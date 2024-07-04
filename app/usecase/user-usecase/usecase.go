@@ -183,3 +183,48 @@ func (uc *usecase) ValidateSessionJwtToken(ctx context.Context, r *http.Request,
 	// get user from claims
 	return uc.getUserFromJwtClaims(ctx, claims, guestAccepted)
 }
+
+func (uc *usecase) RenewPassword(ctx context.Context, user *entity.User, payload *entity.RenewPasswordPayload) error {
+	// validate payload
+	validate := helper.GenerateStructValidator()
+	errMessages := payload.Validate(validate)
+	if len(errMessages) > 0 {
+		return &echo.HTTPError{
+			Code:     http.StatusBadRequest,
+			Message:  errMessages,
+			Internal: entity.NewInternalError(entity.ValidateRenewPasswordFailed, errMessages...),
+		}
+	}
+
+	// check whether the new password is the same as the old password
+	if helper.ValidateEncryptedPassword(user.Password, payload.Password) {
+		return &echo.HTTPError{
+			Code:     http.StatusBadRequest,
+			Message:  entity.RenewPasswordUnchangedMessage,
+			Internal: entity.NewInternalError(entity.RenewPasswordUnchanged, entity.RenewPasswordUnchangedMessage),
+		}
+	}
+
+	// set new password
+	_, encryptedPass, err := uc.generateUserPassword(payload.Password)
+	if err != nil {
+		return err
+	}
+	user.Password = encryptedPass
+	user.UpdatedBy = user.Username
+
+	// save
+	err = uc.userRepo.Update(ctx, user)
+	if err != nil {
+		if echoError, ok := err.(*echo.HTTPError); ok {
+			return echoError
+		}
+		return &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.RenewPasswordError, err.Error()),
+		}
+	}
+
+	return nil
+}

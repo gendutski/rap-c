@@ -13,6 +13,9 @@ const (
 	AttemptLoginFailed                 int    = 40005
 	AttemptLoginIncorrectMessage       string = "incorrect email or password"
 	AttemptLoginDisabledMessage        string = "user is disabled"
+	ValidateRenewPasswordFailed        int    = 40006
+	RenewPasswordUnchanged             int    = 40007
+	RenewPasswordUnchangedMessage      string = "you cannot use old password for new password"
 	MysqlDuplicateKeyError             int    = 40099
 	MysqlDuplicateKeyErrorMessage      string = "duplicate key error"
 
@@ -37,6 +40,7 @@ const (
 	GetAuthorFromJwtError         int    = 50004
 	GeneratingEmailHTMLError      int    = 50005
 	GeneratingEmailPlainTextError int    = 50006
+	RenewPasswordError            int    = 500007
 	SessionError                  int    = 50099
 	SessionErrorMessage           string = "session error"
 )

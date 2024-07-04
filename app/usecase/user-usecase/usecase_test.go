@@ -204,3 +204,59 @@ func Test_GenerateJwtToken(t *testing.T) {
 		assert.Equal(t, "mvp.firman.darmawan@gmail.com", claims["email"])
 	})
 }
+
+func Test_RenewPassword(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	uc, userRepo := initUsecase(ctrl, config.Config{})
+	ctx := context.Background()
+
+	oldPassword := "0LdF4s#ionP455W0rd"
+	encrypted, _ := helper.EncryptPassword(oldPassword)
+
+	t.Run("success", func(t *testing.T) {
+		user := entity.User{
+			ID:       1,
+			Username: "gendutski",
+			Password: encrypted,
+		}
+
+		pass := "Tr!al123#"
+		userRepo.EXPECT().Update(ctx, gomock.Any()).Return(nil).Times(1)
+
+		err := uc.RenewPassword(ctx, &user, &entity.RenewPasswordPayload{
+			Password:        pass,
+			ConfirmPassword: pass,
+		})
+		assert.Nil(t, err)
+		assert.True(t, helper.ValidateEncryptedPassword(user.Password, pass))
+	})
+
+	t.Run("failed, password not match", func(t *testing.T) {
+		user := entity.User{
+			ID:       1,
+			Username: "gendutski",
+			Password: encrypted,
+		}
+
+		pass := "Tr!al123#"
+		err := uc.RenewPassword(ctx, &user, &entity.RenewPasswordPayload{
+			Password:        pass,
+			ConfirmPassword: "password",
+		})
+		assert.NotNil(t, err)
+	})
+
+	t.Run("failed, password not changed", func(t *testing.T) {
+		user := entity.User{
+			ID:       1,
+			Username: "gendutski",
+			Password: encrypted,
+		}
+
+		err := uc.RenewPassword(ctx, &user, &entity.RenewPasswordPayload{
+			Password:        oldPassword,
+			ConfirmPassword: oldPassword,
+		})
+		assert.NotNil(t, err)
+	})
+}

@@ -177,14 +177,7 @@ func (uc *usecase) ValidateJwtToken(ctx context.Context, token *jwt.Token, guest
 
 func (uc *usecase) ValidateSessionJwtToken(ctx context.Context, r *http.Request, w http.ResponseWriter, store sessions.Store, guestAccepted bool) (*entity.User, error) {
 	// get token from session
-	sess, err := helper.NewSession(r, w, store, entity.SessionID)
-	if err != nil {
-		return nil, &echo.HTTPError{
-			Code:     http.StatusInternalServerError,
-			Message:  entity.SessionErrorMessage,
-			Internal: entity.NewInternalError(entity.SessionError, err.Error()),
-		}
-	}
+	sess := entity.InitSession(r, w, store, entity.SessionID, uc.cfg.EnableWarnFileLog)
 	tokenStr, ok := sess.Get(entity.TokenSessionName).(string)
 	if !ok {
 		return nil, echo.NewHTTPError(http.StatusUnauthorized)

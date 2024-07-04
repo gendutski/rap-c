@@ -49,15 +49,8 @@ func (h *userHandler) Login(e echo.Context) error {
 		return e.Redirect(http.StatusMovedPermanently, authorizedPathRedirect)
 	}
 
-	// no authorized user, load login page
-	sess, err := helper.NewSession(e.Request(), e.Response(), h.store, loginSessionName)
-	if err != nil {
-		return &echo.HTTPError{
-			Code:     http.StatusInternalServerError,
-			Message:  entity.SessionErrorMessage,
-			Internal: entity.NewInternalError(entity.SessionError, err.Error()),
-		}
-	}
+	// load session
+	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.EnableWarnFileLog)
 
 	// get email has been inputed from prev login page
 	var emailValue string
@@ -74,14 +67,7 @@ func (h *userHandler) Login(e echo.Context) error {
 
 func (h *userHandler) PostLogin(e echo.Context) error {
 	// init session
-	sess, err := helper.NewSession(e.Request(), e.Response(), h.store, loginSessionName)
-	if err != nil {
-		return &echo.HTTPError{
-			Code:     http.StatusInternalServerError,
-			Message:  entity.SessionErrorMessage,
-			Internal: entity.NewInternalError(entity.SessionError, err.Error()),
-		}
-	}
+	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.EnableWarnFileLog)
 
 	// map route
 	routeMap := helper.RouteMap(e.Echo().Routes())
@@ -90,7 +76,7 @@ func (h *userHandler) PostLogin(e echo.Context) error {
 
 	// bind payload
 	payload := new(entity.AttemptLoginPayload)
-	err = e.Bind(payload)
+	err := e.Bind(payload)
 	if err != nil {
 		return err
 	}
@@ -119,14 +105,7 @@ func (h *userHandler) PostLogin(e echo.Context) error {
 	}
 
 	// init token session
-	tokenSess, err := helper.NewSession(e.Request(), e.Response(), h.store, entity.SessionID)
-	if err != nil {
-		return &echo.HTTPError{
-			Code:     http.StatusInternalServerError,
-			Message:  entity.SessionErrorMessage,
-			Internal: entity.NewInternalError(entity.SessionError, err.Error()),
-		}
-	}
+	tokenSess := entity.InitSession(e.Request(), e.Response(), h.store, entity.SessionID, h.cfg.EnableWarnFileLog)
 	tokenSess.Set(entity.TokenSessionName, token)
 
 	return e.Redirect(http.StatusMovedPermanently, authorizedPathRedirect)
@@ -134,14 +113,7 @@ func (h *userHandler) PostLogin(e echo.Context) error {
 
 func (h *userHandler) PostLogout(e echo.Context) error {
 	// init session
-	sess, err := helper.NewSession(e.Request(), e.Response(), h.store, entity.SessionID)
-	if err != nil {
-		return &echo.HTTPError{
-			Code:     http.StatusInternalServerError,
-			Message:  entity.SessionErrorMessage,
-			Internal: entity.NewInternalError(entity.SessionError, err.Error()),
-		}
-	}
+	sess := entity.InitSession(e.Request(), e.Response(), h.store, entity.SessionID, h.cfg.EnableWarnFileLog)
 	sess.Destroy()
 
 	// map route

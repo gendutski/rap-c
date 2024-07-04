@@ -2,6 +2,7 @@ package helper
 
 import (
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
@@ -18,6 +19,12 @@ func GenerateStructValidator() *validator.Validate {
 		}
 
 		return name
+	})
+
+	// validate username
+	validate.RegisterValidation("username", func(fl validator.FieldLevel) bool {
+		re := regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
+		return re.MatchString(fl.Field().String())
 	})
 	return validate
 }

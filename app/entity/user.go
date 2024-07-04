@@ -32,7 +32,7 @@ type User struct {
 
 // create user payload
 type CreateUserPayload struct {
-	Username string `json:"username" validate:"required"`
+	Username string `json:"username" validate:"required,max=30,username"`
 	FullName string `json:"fullName" validate:"required"`
 	Email    string `json:"email" validate:"required,email"`
 	IsGuest  bool   `json:"-"`
@@ -49,6 +49,10 @@ func (e CreateUserPayload) Validate(validate *validator.Validate) []string {
 				messages = append(messages, fmt.Sprintf("field `%s` is required", v.Field()))
 			case "email":
 				messages = append(messages, "invalid email")
+			case "max":
+				messages = append(messages, fmt.Sprintf("only allowed max `%s` characters for `%s`", v.Param(), v.Field()))
+			case "username":
+				messages = append(messages, fmt.Sprintf("only allowed alphanumeric, period, dash, and underscore for `%s`", v.Field()))
 			}
 		}
 	}

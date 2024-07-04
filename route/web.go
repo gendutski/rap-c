@@ -40,7 +40,7 @@ func SetWebRoute(e *echo.Echo, h *WebHandler) {
 	e.File("/favicon.ico", filepath.Join(storagePath, assetPath, imagePath, favIcon))
 
 	// login page
-	e.GET("/login", h.UserPage.Login).Name = entity.LoginRouteName
+	e.GET(entity.WebLoginPath, h.UserPage.Login).Name = entity.LoginRouteName
 	e.POST("/submit-login", h.UserPage.PostLogin).Name = entity.PostLoginRouteName
 	e.POST("/submit-logout", h.UserPage.PostLogout).Name = entity.PostLogoutRouteName
 

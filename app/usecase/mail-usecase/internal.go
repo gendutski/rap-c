@@ -1,4 +1,4 @@
-package mailmodule
+package mailusecase
 
 import (
 	"fmt"

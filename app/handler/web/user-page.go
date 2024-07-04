@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"rap-c/app/entity"
 	"rap-c/app/helper"
-	usermodule "rap-c/app/module/user-module"
+	"rap-c/app/usecase/contract"
 	"rap-c/config"
 
 	"github.com/gorilla/sessions"
@@ -29,14 +29,14 @@ type UserPage interface {
 	Profile(e echo.Context) error
 }
 
-func NewUserPage(cfg config.Config, store sessions.Store, userModule usermodule.UserUsecase) UserPage {
-	return &userHandler{cfg, store, userModule}
+func NewUserPage(cfg config.Config, store sessions.Store, userUsecase contract.UserUsecase) UserPage {
+	return &userHandler{cfg, store, userUsecase}
 }
 
 type userHandler struct {
-	cfg        config.Config
-	store      sessions.Store
-	userModule usermodule.UserUsecase
+	cfg         config.Config
+	store       sessions.Store
+	userUsecase contract.UserUsecase
 }
 
 func (h *userHandler) Login(e echo.Context) error {
@@ -46,7 +46,7 @@ func (h *userHandler) Login(e echo.Context) error {
 
 	// check if token session is exists
 	ctx := e.Request().Context()
-	_, err := h.userModule.ValidateSessionJwtToken(ctx, e.Request(), e.Response(), h.store, h.cfg.EnableGuestLogin)
+	_, err := h.userUsecase.ValidateSessionJwtToken(ctx, e.Request(), e.Response(), h.store, h.cfg.EnableGuestLogin)
 	if err == nil {
 		return e.Redirect(http.StatusMovedPermanently, authorizedPathRedirect)
 	}
@@ -85,7 +85,7 @@ func (h *userHandler) PostLogin(e echo.Context) error {
 	ctx := e.Request().Context()
 
 	// get user
-	user, err := h.userModule.AttemptLogin(ctx, payload)
+	user, err := h.userUsecase.AttemptLogin(ctx, payload)
 	if err != nil {
 		if herr, ok := err.(*echo.HTTPError); ok {
 			sess.Set("email", e.FormValue("email"))
@@ -96,7 +96,7 @@ func (h *userHandler) PostLogin(e echo.Context) error {
 	}
 
 	// generate token
-	token, err := h.userModule.GenerateJwtToken(ctx, user)
+	token, err := h.userUsecase.GenerateJwtToken(ctx, user)
 	if err != nil {
 		if herr, ok := err.(*echo.HTTPError); ok {
 			sess.Set("email", e.FormValue("email"))

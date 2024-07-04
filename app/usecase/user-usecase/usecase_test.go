@@ -1,12 +1,13 @@
-package usermodule_test
+package userusecase_test
 
 import (
 	"context"
 	"net/http"
 	"rap-c/app/entity"
 	"rap-c/app/helper"
-	usermodule "rap-c/app/module/user-module"
 	repomocks "rap-c/app/repository/contract/mocks"
+	"rap-c/app/usecase/contract"
+	userusecase "rap-c/app/usecase/user-usecase"
 	"rap-c/config"
 	"testing"
 	"time"
@@ -18,9 +19,9 @@ import (
 	"gorm.io/gorm"
 )
 
-func initUsecase(ctrl *gomock.Controller, cfg config.Config) (usermodule.UserUsecase, *repomocks.MockUserRepository) {
+func initUsecase(ctrl *gomock.Controller, cfg config.Config) (contract.UserUsecase, *repomocks.MockUserRepository) {
 	userRepo := repomocks.NewMockUserRepository(ctrl)
-	uc := usermodule.NewUsecase(cfg, userRepo)
+	uc := userusecase.NewUsecase(cfg, userRepo)
 	return uc, userRepo
 }
 

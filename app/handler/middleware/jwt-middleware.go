@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"errors"
-	usermodule "rap-c/app/module/user-module"
+	"rap-c/app/usecase/contract"
 
 	"github.com/golang-jwt/jwt/v5"
 	echojwt "github.com/labstack/echo-jwt/v4"
@@ -20,7 +20,7 @@ func GetJWT(jwtSecret []byte) echo.MiddlewareFunc {
 	})
 }
 
-func GetUserFromJWT(jwtUserContextKey string, userModule usermodule.UserUsecase, guestAccepted bool) echo.MiddlewareFunc {
+func GetUserFromJWT(jwtUserContextKey string, userUsecase contract.UserUsecase, guestAccepted bool) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		// validate token with user db middleware
 		return func(c echo.Context) error {
@@ -30,7 +30,7 @@ func GetUserFromJWT(jwtUserContextKey string, userModule usermodule.UserUsecase,
 			}
 
 			ctx := c.Request().Context()
-			user, err := userModule.ValidateJwtToken(ctx, token, guestAccepted)
+			user, err := userUsecase.ValidateJwtToken(ctx, token, guestAccepted)
 			if err != nil {
 				return err
 			}

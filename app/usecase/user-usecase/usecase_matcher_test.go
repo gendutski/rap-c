@@ -1,4 +1,4 @@
-package usermodule_test
+package userusecase_test
 
 import (
 	"fmt"

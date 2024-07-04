@@ -10,9 +10,9 @@ import (
 	"rap-c/app/handler/middleware"
 	"rap-c/app/handler/web"
 	"rap-c/app/helper"
-	mailmodule "rap-c/app/module/mail-module"
-	usermodule "rap-c/app/module/user-module"
 	userrepository "rap-c/app/repository/mysql/user-repository"
+	mailusecase "rap-c/app/usecase/mail-usecase"
+	userusecase "rap-c/app/usecase/user-usecase"
 	"rap-c/config"
 	"rap-c/route"
 	"regexp"
@@ -48,8 +48,8 @@ func serve() {
 	userRepo := userrepository.New(db)
 
 	// load modules
-	userUsecase := usermodule.NewUsecase(cfg, userRepo)
-	mailUsecase := mailmodule.NewUsecase(cfg)
+	userUsecase := userusecase.NewUsecase(cfg, userRepo)
+	mailUsecase := mailusecase.NewUsecase(cfg)
 
 	// load api handler
 	userAPI := api.NewUserHandler(cfg, userUsecase, mailUsecase)
@@ -86,7 +86,7 @@ func serve() {
 		JwtUserContextKey: cfg.JwtUserContextKey,
 		JwtSecret:         cfg.JwtSecret,
 		GuestAccepted:     cfg.EnableGuestLogin,
-		UserModule:        userUsecase,
+		UserUsecase:       userUsecase,
 		UserAPI:           userAPI,
 	})
 	// set web page route
@@ -94,7 +94,7 @@ func serve() {
 		JwtUserContextKey: cfg.JwtUserContextKey,
 		JwtSecret:         cfg.JwtSecret,
 		GuestAccepted:     cfg.EnableGuestLogin,
-		UserModule:        userUsecase,
+		UserUsecase:       userUsecase,
 		UserPage:          userWeb,
 		Store:             sessionStore,
 	})

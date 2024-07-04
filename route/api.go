@@ -6,7 +6,7 @@ import (
 	"rap-c/app/entity"
 	"rap-c/app/handler/api"
 	"rap-c/app/handler/middleware"
-	usermodule "rap-c/app/module/user-module"
+	"rap-c/app/usecase/contract"
 
 	"github.com/labstack/echo/v4"
 )
@@ -19,7 +19,7 @@ type APIHandler struct {
 	JwtUserContextKey string
 	JwtSecret         string
 	GuestAccepted     bool
-	UserModule        usermodule.UserUsecase
+	UserUsecase       contract.UserUsecase
 	UserAPI           api.UserAPI
 }
 
@@ -33,14 +33,14 @@ func SetAPIRoute(e *echo.Echo, h *APIHandler) {
 	// all login user group
 	allLoginRole := []echo.MiddlewareFunc{
 		middleware.GetJWT([]byte(h.JwtSecret)),
-		middleware.GetUserFromJWT(h.JwtUserContextKey, h.UserModule, h.GuestAccepted),
+		middleware.GetUserFromJWT(h.JwtUserContextKey, h.UserUsecase, h.GuestAccepted),
 		middleware.PasswordNotChanged(h.JwtUserContextKey, true),
 	}
 
 	// non guest only group
 	nonGuestOnly := []echo.MiddlewareFunc{
 		middleware.GetJWT([]byte(h.JwtSecret)),
-		middleware.GetUserFromJWT(h.JwtUserContextKey, h.UserModule, false),
+		middleware.GetUserFromJWT(h.JwtUserContextKey, h.UserUsecase, false),
 		middleware.PasswordNotChanged(h.JwtUserContextKey, true),
 	}
 

@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"rap-c/app/entity"
-	mailmodule "rap-c/app/module/mail-module"
-	usermodule "rap-c/app/module/user-module"
+	"rap-c/app/usecase/contract"
 	"rap-c/config"
 
 	"github.com/labstack/echo/v4"
@@ -18,14 +17,14 @@ type UserAPI interface {
 	Login(e echo.Context) error
 }
 
-func NewUserHandler(cfg config.Config, userModule usermodule.UserUsecase, mailModule mailmodule.MailUsecase) UserAPI {
-	return &userHandler{cfg, userModule, mailModule}
+func NewUserHandler(cfg config.Config, userUsecase contract.UserUsecase, mailUsecase contract.MailUsecase) UserAPI {
+	return &userHandler{cfg, userUsecase, mailUsecase}
 }
 
 type userHandler struct {
-	cfg        config.Config
-	userModule usermodule.UserUsecase
-	mailModule mailmodule.MailUsecase
+	cfg         config.Config
+	userUsecase contract.UserUsecase
+	mailUsecase contract.MailUsecase
 }
 
 func (h *userHandler) Create(e echo.Context) error {
@@ -48,7 +47,7 @@ func (h *userHandler) Create(e echo.Context) error {
 	}
 
 	// create user
-	user, password, err := h.userModule.Create(ctx, payload, author)
+	user, password, err := h.userUsecase.Create(ctx, payload, author)
 	if err != nil {
 		return err
 	}
@@ -62,7 +61,7 @@ func (h *userHandler) Create(e echo.Context) error {
 			nil,
 			false,
 		).Log()
-		err = h.mailModule.Welcome(user, password)
+		err = h.mailUsecase.Welcome(user, password)
 		if err != nil {
 			entity.InitLog(
 				e.Request().RequestURI,
@@ -85,12 +84,12 @@ func (h *userHandler) Login(e echo.Context) error {
 	}
 	ctx := e.Request().Context()
 
-	user, err := h.userModule.AttemptLogin(ctx, payload)
+	user, err := h.userUsecase.AttemptLogin(ctx, payload)
 	if err != nil {
 		return err
 	}
 
-	token, err := h.userModule.GenerateJwtToken(ctx, user)
+	token, err := h.userUsecase.GenerateJwtToken(ctx, user)
 	if err != nil {
 		return err
 	}

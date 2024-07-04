@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"path/filepath"
 	"rap-c/app/entity"
+	"rap-c/app/usecase/contract"
 
 	"rap-c/app/handler/middleware"
 	"rap-c/app/handler/web"
-	usermodule "rap-c/app/module/user-module"
 
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
@@ -24,7 +24,7 @@ type WebHandler struct {
 	JwtUserContextKey string
 	JwtSecret         string
 	GuestAccepted     bool
-	UserModule        usermodule.UserUsecase
+	UserUsecase       contract.UserUsecase
 	UserPage          web.UserPage
 	Store             sessions.Store
 }
@@ -45,17 +45,17 @@ func SetWebRoute(e *echo.Echo, h *WebHandler) {
 	e.POST("/submit-logout", h.UserPage.PostLogout).Name = entity.PostLogoutRouteName
 
 	// password must change
-	e.GET(entity.WebPasswordChangePath, h.UserPage.PasswordChanger, middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserModule, h.GuestAccepted))
+	e.GET(entity.WebPasswordChangePath, h.UserPage.PasswordChanger, middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserUsecase, h.GuestAccepted))
 
 	// all login user group
 	allLoginRole := []echo.MiddlewareFunc{
-		middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserModule, h.GuestAccepted),
+		middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserUsecase, h.GuestAccepted),
 		middleware.PasswordNotChanged(h.JwtUserContextKey, false),
 	}
 
 	// non guest only group
 	nonGuestOnly := []echo.MiddlewareFunc{
-		middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserModule, false),
+		middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserUsecase, false),
 		middleware.PasswordNotChanged(h.JwtUserContextKey, false),
 	}
 

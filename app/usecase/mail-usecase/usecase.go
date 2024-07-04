@@ -1,8 +1,9 @@
-package mailmodule
+package mailusecase
 
 import (
 	"net/http"
 	"rap-c/app/entity"
+	"rap-c/app/usecase/contract"
 	"rap-c/config"
 
 	"github.com/labstack/echo/v4"
@@ -13,11 +14,7 @@ const (
 	welcomeSubject string = "Selamat datang di Rap-C"
 )
 
-type MailUsecase interface {
-	Welcome(user *entity.User, password string) error
-}
-
-func NewUsecase(cfg config.Config) MailUsecase {
+func NewUsecase(cfg config.Config) contract.MailUsecase {
 	return &usecase{cfg}
 }
 

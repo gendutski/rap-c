@@ -1,4 +1,4 @@
-package usermodule
+package userusecase
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"rap-c/app/entity"
 	"rap-c/app/helper"
 	"rap-c/app/repository/contract"
+	usecasecontract "rap-c/app/usecase/contract"
 	"rap-c/config"
 	"time"
 
@@ -22,20 +23,7 @@ const (
 	tokenStrEmail string = "email"
 )
 
-type UserUsecase interface {
-	// create user
-	Create(ctx context.Context, payload *entity.CreateUserPayload, author *entity.User) (*entity.User, string, error)
-	// attempt to login with email and password
-	AttemptLogin(ctx context.Context, payload *entity.AttemptLoginPayload) (*entity.User, error)
-	// convert user to jwt token
-	GenerateJwtToken(ctx context.Context, user *entity.User) (string, error)
-	// validate jwt token into user
-	ValidateJwtToken(ctx context.Context, token *jwt.Token, guestAccepted bool) (*entity.User, error)
-	// validate jwt token from session
-	ValidateSessionJwtToken(ctx context.Context, r *http.Request, w http.ResponseWriter, store sessions.Store, guestAccepted bool) (*entity.User, error)
-}
-
-func NewUsecase(cfg config.Config, userRepo contract.UserRepository) UserUsecase {
+func NewUsecase(cfg config.Config, userRepo contract.UserRepository) usecasecontract.UserUsecase {
 	return &usecase{cfg, userRepo}
 }
 

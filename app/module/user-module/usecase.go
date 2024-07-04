@@ -24,7 +24,7 @@ const (
 
 type UserUsecase interface {
 	// create user
-	Create(ctx context.Context, payload *entity.CreateUserPayload, author *entity.User) (*entity.User, error)
+	Create(ctx context.Context, payload *entity.CreateUserPayload, author *entity.User) (*entity.User, string, error)
 	// attempt to login with email and password
 	AttemptLogin(ctx context.Context, payload *entity.AttemptLoginPayload) (*entity.User, error)
 	// convert user to jwt token
@@ -44,12 +44,12 @@ type usecase struct {
 	userRepo contract.UserRepository
 }
 
-func (uc *usecase) Create(ctx context.Context, payload *entity.CreateUserPayload, author *entity.User) (*entity.User, error) {
+func (uc *usecase) Create(ctx context.Context, payload *entity.CreateUserPayload, author *entity.User) (*entity.User, string, error) {
 	// validate payload
 	validate := helper.GenerateStructValidator()
 	errMessages := payload.Validate(validate)
 	if len(errMessages) > 0 {
-		return nil, &echo.HTTPError{
+		return nil, "", &echo.HTTPError{
 			Code:     http.StatusBadRequest,
 			Message:  errMessages,
 			Internal: entity.NewInternalError(entity.ValidateCreateUserFailed, errMessages...),
@@ -57,7 +57,7 @@ func (uc *usecase) Create(ctx context.Context, payload *entity.CreateUserPayload
 	}
 	// validate author
 	if author == nil {
-		return nil, &echo.HTTPError{
+		return nil, "", &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
 			Message:  entity.CreateUserErrorEmptyAuthor,
 			Internal: entity.NewInternalError(entity.CreateUserError, entity.CreateUserErrorEmptyAuthor),
@@ -65,9 +65,9 @@ func (uc *usecase) Create(ctx context.Context, payload *entity.CreateUserPayload
 	}
 
 	// generate password
-	pass, err := uc.generateUserPassword("")
+	pass, encryptedPass, err := uc.generateUserPassword("")
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	// set payload & result
@@ -75,7 +75,7 @@ func (uc *usecase) Create(ctx context.Context, payload *entity.CreateUserPayload
 		Username:           payload.Username,
 		FullName:           payload.FullName,
 		Email:              payload.Email,
-		Password:           pass,
+		Password:           encryptedPass,
 		PasswordMustChange: true,
 		IsGuest:            payload.IsGuest,
 		CreatedBy:          author.Username,
@@ -86,15 +86,15 @@ func (uc *usecase) Create(ctx context.Context, payload *entity.CreateUserPayload
 	err = uc.userRepo.Create(ctx, &user)
 	if err != nil {
 		if echoError, ok := err.(*echo.HTTPError); ok {
-			return nil, echoError
+			return nil, "", echoError
 		}
-		return nil, &echo.HTTPError{
+		return nil, "", &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
 			Message:  http.StatusText(http.StatusInternalServerError),
 			Internal: entity.NewInternalError(entity.CreateUserError, err.Error()),
 		}
 	}
-	return &user, nil
+	return &user, pass, nil
 }
 
 func (uc *usecase) AttemptLogin(ctx context.Context, payload *entity.AttemptLoginPayload) (*entity.User, error) {

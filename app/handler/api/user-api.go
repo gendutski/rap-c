@@ -1,8 +1,10 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"rap-c/app/entity"
+	mailmodule "rap-c/app/module/mail-module"
 	usermodule "rap-c/app/module/user-module"
 	"rap-c/config"
 
@@ -16,13 +18,14 @@ type UserAPI interface {
 	Login(e echo.Context) error
 }
 
-func NewUserHandler(cfg config.Config, userModule usermodule.UserUsecase) UserAPI {
-	return &userHandler{cfg, userModule}
+func NewUserHandler(cfg config.Config, userModule usermodule.UserUsecase, mailModule mailmodule.MailUsecase) UserAPI {
+	return &userHandler{cfg, userModule, mailModule}
 }
 
 type userHandler struct {
 	cfg        config.Config
 	userModule usermodule.UserUsecase
+	mailModule mailmodule.MailUsecase
 }
 
 func (h *userHandler) Create(e echo.Context) error {
@@ -45,13 +48,31 @@ func (h *userHandler) Create(e echo.Context) error {
 	}
 
 	// create user
-	user, err := h.userModule.Create(ctx, payload, author)
+	user, password, err := h.userModule.Create(ctx, payload, author)
 	if err != nil {
 		return err
 	}
 
 	// send email
-	// TODO:
+	go func() {
+		entity.InitLog(
+			e.Request().RequestURI,
+			fmt.Sprintf("Send welcome email to %s", user.Email),
+			http.StatusOK,
+			nil,
+			false,
+		).Log()
+		err = h.mailModule.Welcome(user, password)
+		if err != nil {
+			entity.InitLog(
+				e.Request().RequestURI,
+				"send welcome mail",
+				http.StatusOK,
+				err,
+				h.cfg.EnableWarnFileLog,
+			).Log()
+		}
+	}()
 
 	return e.JSON(http.StatusOK, user)
 }

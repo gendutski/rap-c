@@ -13,22 +13,25 @@ import (
 )
 
 // encrypt password given or generated one
-func (uc *usecase) generateUserPassword(pass string) (string, error) {
-	var err error
+func (uc *usecase) generateUserPassword(pass string) (password string, encryptPassword string, err error) {
 	if pass == "" {
 		// generate password
-		pass, err = helper.GenerateStrongPassword()
+		password, err = helper.GenerateStrongPassword()
 		if err != nil {
-			return "", &echo.HTTPError{
+			err = &echo.HTTPError{
 				Code:     http.StatusInternalServerError,
 				Message:  http.StatusText(http.StatusInternalServerError),
 				Internal: entity.NewInternalError(entity.GeneratePasswordError, err.Error()),
 			}
+			return
 		}
+	} else {
+		password = pass
 	}
 
 	// encrypt password
-	return helper.EncryptPassword(pass)
+	encryptPassword, err = helper.EncryptPassword(password)
+	return
 }
 
 func (uc *usecase) getUserFromJwtClaims(ctx context.Context, claims jwt.MapClaims, guestAccepted bool) (*entity.User, error) {

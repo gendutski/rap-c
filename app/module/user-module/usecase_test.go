@@ -39,13 +39,14 @@ func Test_Create(t *testing.T) {
 			UpdatedBy:          "SYSTEM",
 		})).Return(nil).Times(1)
 
-		res, err := uc.Create(ctx, &entity.CreateUserPayload{
+		res, pass, err := uc.Create(ctx, &entity.CreateUserPayload{
 			Username: "gendutski",
 			FullName: "Firman Darmawan",
 			Email:    "mvp.firman.darmawan@gmail.com",
 		}, &entity.User{Username: "SYSTEM"})
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
+		assert.True(t, helper.ValidateEncryptedPassword(res.Password, pass))
 	})
 
 	t.Run("success guest", func(t *testing.T) {
@@ -59,7 +60,7 @@ func Test_Create(t *testing.T) {
 			UpdatedBy:          "SYSTEM",
 		})).Return(nil).Times(1)
 
-		res, err := uc.Create(ctx, &entity.CreateUserPayload{
+		res, pass, err := uc.Create(ctx, &entity.CreateUserPayload{
 			Username: "gendutski",
 			FullName: "Firman Darmawan",
 			Email:    "mvp.firman.darmawan@gmail.com",
@@ -67,10 +68,11 @@ func Test_Create(t *testing.T) {
 		}, &entity.User{Username: "SYSTEM"})
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
+		assert.True(t, helper.ValidateEncryptedPassword(res.Password, pass))
 	})
 
 	t.Run("not valid payload", func(t *testing.T) {
-		res, err := uc.Create(ctx, &entity.CreateUserPayload{
+		res, _, err := uc.Create(ctx, &entity.CreateUserPayload{
 			FullName: "Firman Darmawan",
 			Email:    "mvp.firman.darmawan@gmail.com",
 		}, &entity.User{Username: "gendutski"})
@@ -79,7 +81,7 @@ func Test_Create(t *testing.T) {
 	})
 
 	t.Run("empty author", func(t *testing.T) {
-		res, err := uc.Create(ctx, &entity.CreateUserPayload{
+		res, _, err := uc.Create(ctx, &entity.CreateUserPayload{
 			Username: "gendutski",
 			FullName: "Firman Darmawan",
 			Email:    "mvp.firman.darmawan@gmail.com",

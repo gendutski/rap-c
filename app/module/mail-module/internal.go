@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	defaultEmailLogo string = "https://github.com/gendutski/rap-c/blob/main/storage/public-asset/images/logo-s.png"
+	defaultEmailLogo string = "https://github.com/gendutski/rap-c/blob/main/storage/public-asset/images/logo-s.png?raw=true"
 )
 
 func (uc *usecase) initHermes() *hermes.Hermes {

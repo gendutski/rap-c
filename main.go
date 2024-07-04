@@ -10,6 +10,7 @@ import (
 	"rap-c/app/handler/middleware"
 	"rap-c/app/handler/web"
 	"rap-c/app/helper"
+	mailmodule "rap-c/app/module/mail-module"
 	usermodule "rap-c/app/module/user-module"
 	userrepository "rap-c/app/repository/mysql/user-repository"
 	"rap-c/config"
@@ -48,9 +49,10 @@ func serve() {
 
 	// load modules
 	userUsecase := usermodule.NewUsecase(cfg, userRepo)
+	mailUsecase := mailmodule.NewUsecase(cfg)
 
 	// load api handler
-	userAPI := api.NewUserHandler(cfg, userUsecase)
+	userAPI := api.NewUserHandler(cfg, userUsecase, mailUsecase)
 
 	// load session store
 	sessionStore := sessions.NewCookieStore([]byte(cfg.SessionKey))

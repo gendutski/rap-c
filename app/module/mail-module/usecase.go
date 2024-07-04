@@ -51,6 +51,7 @@ func (uc *usecase) Welcome(user *entity.User, password string) error {
 					},
 				},
 			},
+			Signature: "Hormat Kami",
 		},
 	}
 

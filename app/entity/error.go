@@ -31,6 +31,10 @@ const (
 	PasswordMustBeChanged                int    = 40302
 	PasswordMustBeChangedMessage         string = "password must be changed"
 
+	// not founc
+	UsernameNotFound        int    = 40401
+	UsernameNotFoundMessage string = "user `%s` not found"
+
 	// internal error
 	CreateUserError               int    = 50001
 	CreateUserErrorEmptyAuthor    string = "author is nil"

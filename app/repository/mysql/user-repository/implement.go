@@ -103,6 +103,7 @@ func (r *repo) GetUsersByRequest(ctx context.Context, req *entity.GetUserListReq
 	}
 	sort := validSort[req.SortField]
 	if sort == "" {
+		req.SortField = "createdAt"
 		sort = "created_at"
 	}
 	order := "asc"
@@ -130,9 +131,6 @@ func (r *repo) renderUsersQuery(req *entity.GetUserListRequest) *gorm.DB {
 	qry := r.db
 	if req.UserName != "" {
 		qry = qry.Where("user_name = ?", req.UserName)
-	}
-	if req.Role != "" {
-		qry = qry.Where("role = ?", req.Role)
 	}
 	if req.Email != "" {
 		qry = qry.Where("email like ?", fmt.Sprintf("%%%s%%", req.Email))

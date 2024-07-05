@@ -87,7 +87,6 @@ type GetUserListRequest struct {
 	UserName        string     `query:"userName" json:"userName"`
 	Email           string     `query:"email" json:"email"`
 	FullName        string     `query:"fullName" json:"fullName"`
-	Role            string     `query:"role" json:"role"`
 	Show            string     `query:"show" json:"show"`
 	SortField       string     `query:"sortField" json:"sortField"`
 	DescendingOrder bool       `query:"descendingOrder" json:"descendingOrder"`

@@ -3,6 +3,7 @@ package userusecase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"rap-c/app/entity"
 	"rap-c/app/helper"
@@ -232,4 +233,33 @@ func (uc *usecase) RenewPassword(ctx context.Context, user *entity.User, payload
 	}
 
 	return nil
+}
+
+func (uc *usecase) GetUserList(ctx context.Context, req *entity.GetUserListRequest) ([]*entity.User, error) {
+	if req.Page < 1 {
+		req.Page = 1
+	}
+	return uc.userRepo.GetUsersByRequest(ctx, req)
+}
+
+func (uc *usecase) GetTotalUserList(ctx context.Context, req *entity.GetUserListRequest) (int64, error) {
+	if req.Page < 1 {
+		req.Page = 1
+	}
+	return uc.userRepo.GetTotalUsersByRequest(ctx, req)
+}
+
+func (uc *usecase) GetUserByUsername(ctx context.Context, username string) (*entity.User, error) {
+	user, err := uc.userRepo.GetUserByField(ctx, "username", username)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			message := fmt.Sprintf(entity.UsernameNotFoundMessage, username)
+			return nil, &echo.HTTPError{
+				Code:     http.StatusNotFound,
+				Message:  message,
+				Internal: entity.NewInternalError(entity.UsernameNotFound, message),
+			}
+		}
+	}
+	return user, nil
 }

@@ -22,4 +22,10 @@ type UserUsecase interface {
 	ValidateSessionJwtToken(ctx context.Context, r *http.Request, w http.ResponseWriter, store sessions.Store, guestAccepted bool) (*entity.User, string, error)
 	// update or modify user password with new password
 	RenewPassword(ctx context.Context, user *entity.User, payload *entity.RenewPasswordPayload) error
+	// get user list
+	GetUserList(ctx context.Context, req *entity.GetUserListRequest) ([]*entity.User, error)
+	// get total user list
+	GetTotalUserList(ctx context.Context, req *entity.GetUserListRequest) (int64, error)
+	// get user by username
+	GetUserByUsername(ctx context.Context, username string) (*entity.User, error)
 }

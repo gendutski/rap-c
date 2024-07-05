@@ -50,9 +50,9 @@ func SetAPIRoute(e *echo.Echo, h *APIHandler) {
 
 func (h *APIHandler) setUserAPI(apiGroup *echo.Group, allLoginRole []echo.MiddlewareFunc, nonGuestOnly []echo.MiddlewareFunc) {
 	// all user
-	apiGroup.GET("/user/detail/:username", echo.NotFoundHandler, allLoginRole...)
-	apiGroup.GET("/user/list", echo.NotFoundHandler, allLoginRole...)
-	apiGroup.GET("/user/total", echo.NotFoundHandler, allLoginRole...)
+	apiGroup.GET("/user/detail/:username", h.UserAPI.GetUserDetailByUsername, allLoginRole...)
+	apiGroup.GET("/user/list", h.UserAPI.GetUserList, allLoginRole...)
+	apiGroup.GET("/user/total", h.UserAPI.GetTotalUserList, allLoginRole...)
 
 	// non guest
 	apiGroup.POST("/user/create", h.UserAPI.Create, nonGuestOnly...)

@@ -18,6 +18,12 @@ type UserAPI interface {
 	Login(e echo.Context) error
 	// renew password
 	RenewPassword(e echo.Context) error
+	// get user list
+	GetUserList(e echo.Context) error
+	// get total user list
+	GetTotalUserList(e echo.Context) error
+	// get user detail by username
+	GetUserDetailByUsername(e echo.Context) error
 }
 
 func NewUserHandler(cfg config.Config, userUsecase contract.UserUsecase, mailUsecase contract.MailUsecase) UserAPI {
@@ -124,4 +130,54 @@ func (h *userHandler) RenewPassword(e echo.Context) error {
 	}
 
 	return e.JSON(http.StatusOK, map[string]interface{}{"status": "ok"})
+}
+
+func (h *userHandler) GetUserList(e echo.Context) error {
+	req := new(entity.GetUserListRequest)
+	err := e.Bind(req)
+	if err != nil {
+		return err
+	}
+	ctx := e.Request().Context()
+
+	users, err := h.userUsecase.GetUserList(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	return e.JSON(http.StatusOK, map[string]interface{}{
+		"users":   users,
+		"request": req,
+	})
+}
+
+func (h *userHandler) GetTotalUserList(e echo.Context) error {
+	req := new(entity.GetUserListRequest)
+	err := e.Bind(req)
+	if err != nil {
+		return err
+	}
+	ctx := e.Request().Context()
+
+	total, err := h.userUsecase.GetTotalUserList(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	return e.JSON(http.StatusOK, map[string]interface{}{
+		"total":   total,
+		"request": req,
+	})
+}
+
+func (h *userHandler) GetUserDetailByUsername(e echo.Context) error {
+	username := e.Param("username")
+	ctx := e.Request().Context()
+
+	user, err := h.userUsecase.GetUserByUsername(ctx, username)
+	if err != nil {
+		return err
+	}
+
+	return e.JSON(http.StatusOK, user)
 }

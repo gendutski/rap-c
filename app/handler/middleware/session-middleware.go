@@ -13,7 +13,7 @@ func ValidateJwtTokenFromSession(store sessions.Store, jwtUserContextKey string,
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			ctx := c.Request().Context()
-			user, err := userUsecase.ValidateSessionJwtToken(ctx, c.Request(), c.Response(), store, guestAccepted)
+			user, token, err := userUsecase.ValidateSessionJwtToken(ctx, c.Request(), c.Response(), store, guestAccepted)
 			if err != nil {
 				if herr, ok := err.(*echo.HTTPError); ok && herr.Code == http.StatusUnauthorized {
 					return c.Redirect(http.StatusMovedPermanently, entity.WebLoginPath)
@@ -21,6 +21,7 @@ func ValidateJwtTokenFromSession(store sessions.Store, jwtUserContextKey string,
 				return err
 			}
 			c.Set(jwtUserContextKey, user)
+			c.Set(entity.TokenSessionName, token)
 			return next(c)
 		}
 	}

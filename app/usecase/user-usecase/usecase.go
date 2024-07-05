@@ -163,12 +163,12 @@ func (uc *usecase) ValidateJwtToken(ctx context.Context, token *jwt.Token, guest
 	return uc.getUserFromJwtClaims(ctx, claims, guestAccepted)
 }
 
-func (uc *usecase) ValidateSessionJwtToken(ctx context.Context, r *http.Request, w http.ResponseWriter, store sessions.Store, guestAccepted bool) (*entity.User, error) {
+func (uc *usecase) ValidateSessionJwtToken(ctx context.Context, r *http.Request, w http.ResponseWriter, store sessions.Store, guestAccepted bool) (*entity.User, string, error) {
 	// get token from session
 	sess := entity.InitSession(r, w, store, entity.SessionID, uc.cfg.EnableWarnFileLog)
 	tokenStr, ok := sess.Get(entity.TokenSessionName).(string)
 	if !ok {
-		return nil, echo.NewHTTPError(http.StatusUnauthorized)
+		return nil, "", echo.NewHTTPError(http.StatusUnauthorized)
 	}
 
 	// parse token
@@ -177,11 +177,15 @@ func (uc *usecase) ValidateSessionJwtToken(ctx context.Context, r *http.Request,
 		return []byte(uc.cfg.JwtSecret), nil
 	})
 	if err != nil || !token.Valid {
-		return nil, echo.NewHTTPError(http.StatusUnauthorized)
+		return nil, "", echo.NewHTTPError(http.StatusUnauthorized)
 	}
 
 	// get user from claims
-	return uc.getUserFromJwtClaims(ctx, claims, guestAccepted)
+	user, err := uc.getUserFromJwtClaims(ctx, claims, guestAccepted)
+	if err != nil {
+		return nil, "", err
+	}
+	return user, tokenStr, nil
 }
 
 func (uc *usecase) RenewPassword(ctx context.Context, user *entity.User, payload *entity.RenewPasswordPayload) error {

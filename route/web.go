@@ -32,8 +32,7 @@ type WebHandler struct {
 func SetWebRoute(e *echo.Echo, h *WebHandler) {
 	// home page
 	e.GET("/", func(c echo.Context) error {
-
-		return c.JSON(200, c.Echo().Routes())
+		return c.Redirect(http.StatusMovedPermanently, "/login")
 	})
 	// asset folder
 	e.Static("/assets", filepath.Join(storagePath, assetPath))
@@ -46,6 +45,7 @@ func SetWebRoute(e *echo.Echo, h *WebHandler) {
 
 	// password must change
 	e.GET(entity.WebPasswordChangePath, h.UserPage.PasswordChanger, middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserUsecase, h.GuestAccepted))
+	e.POST(entity.WebPasswordChangePath, h.UserPage.SubmitPasswordChanger, middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserUsecase, h.GuestAccepted)).Name = entity.RenewPasswordRouteName
 
 	// all login user group
 	allLoginRole := []echo.MiddlewareFunc{

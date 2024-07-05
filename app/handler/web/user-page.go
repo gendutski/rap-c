@@ -2,9 +2,9 @@ package web
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"rap-c/app/entity"
+	"rap-c/app/handler"
 	"rap-c/app/helper"
 	"rap-c/app/usecase/contract"
 	"rap-c/config"
@@ -26,18 +26,26 @@ type UserPage interface {
 	PostLogout(e echo.Context) error
 	// password must change page
 	PasswordChanger(e echo.Context) error
+	// submit password change
+	SubmitPasswordChanger(e echo.Context) error
 	// profile page
 	Profile(e echo.Context) error
 }
 
 func NewUserPage(cfg config.Config, store sessions.Store, userUsecase contract.UserUsecase) UserPage {
-	return &userHandler{cfg, store, userUsecase}
+	return &userHandler{
+		cfg:         cfg,
+		store:       store,
+		userUsecase: userUsecase,
+		BaseHandler: handler.NewBaseHandler(cfg),
+	}
 }
 
 type userHandler struct {
 	cfg         config.Config
 	store       sessions.Store
 	userUsecase contract.UserUsecase
+	BaseHandler *handler.BaseHandler
 }
 
 func (h *userHandler) Login(e echo.Context) error {
@@ -47,7 +55,7 @@ func (h *userHandler) Login(e echo.Context) error {
 
 	// check if token session is exists
 	ctx := e.Request().Context()
-	_, err := h.userUsecase.ValidateSessionJwtToken(ctx, e.Request(), e.Response(), h.store, h.cfg.EnableGuestLogin)
+	_, _, err := h.userUsecase.ValidateSessionJwtToken(ctx, e.Request(), e.Response(), h.store, h.cfg.EnableGuestLogin)
 	if err == nil {
 		return e.Redirect(http.StatusMovedPermanently, authorizedPathRedirect)
 	}
@@ -149,20 +157,61 @@ func (h *userHandler) PostLogout(e echo.Context) error {
 }
 
 func (h *userHandler) PasswordChanger(e echo.Context) error {
-	user, ok := e.Get(h.cfg.JwtUserContextKey).(*entity.User)
-	if !ok {
-		return errors.New("invalid user")
+	// get author
+	author, err := h.BaseHandler.GetAuthor(e)
+	if err != nil {
+		return err
 	}
-	return e.Render(http.StatusOK, "pass-changer.html", map[string]interface{}{"emailValue": user.Email})
+
+	// map route
+	routeMap := helper.RouteMap(e.Echo().Routes())
+
+	return e.Render(http.StatusOK, "pass-changer.html", map[string]interface{}{
+		"emailValue":   author.Email,
+		"logoutAction": routeMap.Get(entity.PostLogoutRouteName, "path"),
+		"logoutMethod": routeMap.Get(entity.PostLogoutRouteName, "method"),
+		"renewAction":  routeMap.Get(entity.RenewPasswordRouteName, "path"),
+		"renewMethod":  routeMap.Get(entity.RenewPasswordRouteName, "method"),
+	})
+}
+
+func (h *userHandler) SubmitPasswordChanger(e echo.Context) error {
+	// get author
+	author, err := h.BaseHandler.GetAuthor(e)
+	if err != nil {
+		return err
+	}
+
+	// get payload
+	payload := new(entity.RenewPasswordPayload)
+	err = e.Bind(payload)
+	if err != nil {
+		return err
+	}
+	ctx := e.Request().Context()
+
+	// renew password
+	err = h.userUsecase.RenewPassword(ctx, author, payload)
+	if err != nil {
+		return err
+	}
+
+	// map route
+	routeMap := helper.RouteMap(e.Echo().Routes())
+	defaultRedirect := routeMap.Get(entity.DefaultAuthorizedRouteRedirect, "path")
+
+	// redirect
+	return e.Redirect(http.StatusMovedPermanently, defaultRedirect)
 }
 
 func (h *userHandler) Profile(e echo.Context) error {
-	user, ok := e.Get(h.cfg.JwtUserContextKey).(*entity.User)
-	if !ok {
-		return errors.New("invalid user")
+	// get author
+	author, err := h.BaseHandler.GetAuthor(e)
+	if err != nil {
+		return err
 	}
 
 	return e.Render(http.StatusOK, "profile.html", map[string]interface{}{
-		"user": user,
+		"user": author,
 	})
 }

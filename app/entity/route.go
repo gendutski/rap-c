@@ -5,11 +5,14 @@ const (
 	WebLoginPath          string = "/login"
 	WebPasswordChangePath string = "/password-change"
 
-	// route
-	LoginRouteName      string = "loginPage"
-	PostLoginRouteName  string = "submitLogin"
-	PostLogoutRouteName string = "submitLogout"
-	ProfileRouteName    string = "profile"
+	// web route
+	LoginRouteName         string = "loginPage"
+	PostLoginRouteName     string = "submitLogin"
+	PostLogoutRouteName    string = "submitLogout"
+	ProfileRouteName       string = "profile"
+	RenewPasswordRouteName string = "renewPassword"
+
+	// api route
 
 	// route will call when user is authoriezed
 	DefaultAuthorizedRouteRedirect string = ProfileRouteName

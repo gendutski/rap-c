@@ -19,7 +19,7 @@ type UserUsecase interface {
 	// validate jwt token into user
 	ValidateJwtToken(ctx context.Context, token *jwt.Token, guestAccepted bool) (*entity.User, error)
 	// validate jwt token from session
-	ValidateSessionJwtToken(ctx context.Context, r *http.Request, w http.ResponseWriter, store sessions.Store, guestAccepted bool) (*entity.User, error)
+	ValidateSessionJwtToken(ctx context.Context, r *http.Request, w http.ResponseWriter, store sessions.Store, guestAccepted bool) (*entity.User, string, error)
 	// update or modify user password with new password
 	RenewPassword(ctx context.Context, user *entity.User, payload *entity.RenewPasswordPayload) error
 }

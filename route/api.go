@@ -30,11 +30,6 @@ func SetAPIRoute(e *echo.Echo, h *APIHandler) {
 	// non login routes
 	apiGroup.POST("/login", h.UserAPI.Login)
 
-	// renew password routes
-	apiGroup.PUT("/renew-password", h.UserAPI.RenewPassword,
-		middleware.GetJWT([]byte(h.JwtSecret)),
-		middleware.GetUserFromJWT(h.JwtUserContextKey, h.UserUsecase, false))
-
 	// all login user group
 	allLoginRole := []echo.MiddlewareFunc{
 		middleware.GetJWT([]byte(h.JwtSecret)),
@@ -63,6 +58,9 @@ func (h *APIHandler) setUserAPI(apiGroup *echo.Group, allLoginRole []echo.Middle
 	apiGroup.POST("/user/create", h.UserAPI.Create, nonGuestOnly...)
 	apiGroup.PUT("/user/update", echo.NotFoundHandler, nonGuestOnly...)
 	apiGroup.PUT("/user/active-status", echo.NotFoundHandler, nonGuestOnly...)
+
+	// renew password routes
+	apiGroup.PUT("/user/renew-password", h.UserAPI.RenewPassword, nonGuestOnly[:2]...)
 }
 
 // error handler

@@ -17,7 +17,7 @@ type UserUsecase interface {
 	// attempt to login with guest account if exists
 	AttemptGuestLogin(ctx context.Context) (*entity.User, error)
 	// convert user to jwt token
-	GenerateJwtToken(ctx context.Context, user *entity.User) (string, error)
+	GenerateJwtToken(ctx context.Context, user *entity.User, isLongSession bool) (string, error)
 	// validate jwt token into user
 	ValidateJwtToken(ctx context.Context, token *jwt.Token, guestAccepted bool) (*entity.User, error)
 	// validate jwt token from session

@@ -99,7 +99,7 @@ func (h *userHandler) Login(e echo.Context) error {
 		return err
 	}
 
-	token, err := h.userUsecase.GenerateJwtToken(ctx, user)
+	token, err := h.userUsecase.GenerateJwtToken(ctx, user, payload.RememberMe)
 	if err != nil {
 		return err
 	}

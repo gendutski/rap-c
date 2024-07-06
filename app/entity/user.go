@@ -61,8 +61,9 @@ func (e CreateUserPayload) Validate(validate *validator.Validate) []string {
 
 // attempt to login payload
 type AttemptLoginPayload struct {
-	Email    string `json:"email" form:"email" validate:"required,email"`
-	Password string `json:"password" form:"password" validate:"required"`
+	Email      string `json:"email" form:"email" validate:"required,email"`
+	Password   string `json:"password" form:"password" validate:"required"`
+	RememberMe bool   `json:"rememberMe" form:"rememberMe"`
 }
 
 // will validate payload, and return slice of error messages or nil

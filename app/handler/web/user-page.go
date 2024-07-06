@@ -112,7 +112,7 @@ func (h *userHandler) GuestLogin(e echo.Context) error {
 	}
 
 	// generate token
-	token, err := h.userUsecase.GenerateJwtToken(ctx, user)
+	token, err := h.userUsecase.GenerateJwtToken(ctx, user, false)
 	if err != nil {
 		return err
 	}
@@ -157,7 +157,7 @@ func (h *userHandler) PostLogin(e echo.Context) error {
 	}
 
 	// generate token
-	token, err := h.userUsecase.GenerateJwtToken(ctx, user)
+	token, err := h.userUsecase.GenerateJwtToken(ctx, user, payload.RememberMe)
 	if err != nil {
 		if herr, ok := err.(*echo.HTTPError); ok {
 			sess.Set("email", e.FormValue("email"))

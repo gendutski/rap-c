@@ -180,17 +180,20 @@ func Test_AttemptLogin(t *testing.T) {
 func Test_GenerateJwtToken(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	cfg := config.Config{
-		JwtSecret: "secret",
+		JwtSecret:              "secret",
+		JwtExpirationInMinutes: 2,
+		JwtRememberInDays:      2,
 	}
 	uc, _ := initUsecase(ctrl, cfg)
 	ctx := context.Background()
-	t.Run("success", func(t *testing.T) {
+	t.Run("success, short time token session", func(t *testing.T) {
+		exp := time.Now().Add(time.Minute * time.Duration(cfg.JwtExpirationInMinutes)).Unix()
 
 		tokenStr, err := uc.GenerateJwtToken(ctx, &entity.User{
 			ID:       1,
 			Username: "gendutski",
 			Email:    "mvp.firman.darmawan@gmail.com",
-		})
+		}, false)
 
 		assert.Nil(t, err)
 
@@ -202,6 +205,28 @@ func Test_GenerateJwtToken(t *testing.T) {
 		assert.Equal(t, float64(1), claims["id"])
 		assert.Equal(t, "gendutski", claims["userName"])
 		assert.Equal(t, "mvp.firman.darmawan@gmail.com", claims["email"])
+		assert.Equal(t, float64(exp), claims["exp"])
+	})
+
+	t.Run("success, long time token session", func(t *testing.T) {
+		exp := time.Now().Add(time.Hour * 24 * time.Duration(cfg.JwtRememberInDays))
+		tokenStr, err := uc.GenerateJwtToken(ctx, &entity.User{
+			ID:       1,
+			Username: "gendutski",
+			Email:    "mvp.firman.darmawan@gmail.com",
+		}, true)
+
+		assert.Nil(t, err)
+
+		// parse token
+		claims := jwt.MapClaims{}
+		jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
+			return []byte(cfg.JwtSecret), nil
+		})
+		assert.Equal(t, float64(1), claims["id"])
+		assert.Equal(t, "gendutski", claims["userName"])
+		assert.Equal(t, "mvp.firman.darmawan@gmail.com", claims["email"])
+		assert.Equal(t, exp.Format("2006-01-02"), time.Unix(int64(claims["exp"].(float64)), 0).Format("2006-01-02"))
 	})
 }
 

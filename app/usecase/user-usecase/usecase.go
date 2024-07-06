@@ -164,12 +164,17 @@ func (uc *usecase) AttemptGuestLogin(ctx context.Context) (*entity.User, error) 
 	return users[0], nil
 }
 
-func (uc *usecase) GenerateJwtToken(ctx context.Context, user *entity.User) (string, error) {
+func (uc *usecase) GenerateJwtToken(ctx context.Context, user *entity.User, isLongSession bool) (string, error) {
+	exp := time.Now().Add(time.Minute * time.Duration(uc.cfg.JwtExpirationInMinutes)).Unix()
+	if isLongSession {
+		// long session for remember login session
+		exp = time.Now().Add(time.Hour * 24 * time.Duration(uc.cfg.JwtRememberInDays)).Unix()
+	}
 	claims := jwt.MapClaims{
 		tokenStrID:    user.ID,
 		tokenStrName:  user.Username,
 		tokenStrEmail: user.Email,
-		"exp":         time.Now().Add(time.Minute * time.Duration(uc.cfg.JwtExpirationInMinutes)).Unix(),
+		"exp":         exp,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

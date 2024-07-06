@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"rap-c/app/entity"
 	"rap-c/config"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -14,6 +16,13 @@ func NewBaseHandler(cfg config.Config) *BaseHandler {
 
 type BaseHandler struct {
 	cfg config.Config
+}
+
+type Layouts struct {
+	AppName      string
+	Copyright    string
+	LogoutPath   string
+	LogoutMethod string
 }
 
 func (h *BaseHandler) GetAuthor(e echo.Context) (*entity.User, error) {
@@ -28,4 +37,17 @@ func (h *BaseHandler) GetAuthor(e echo.Context) (*entity.User, error) {
 		}
 	}
 	return author, nil
+}
+
+func (h *BaseHandler) GetLayouts() Layouts {
+	return Layouts{
+		AppName:      config.AppName,
+		Copyright:    h.GetCopyright(),
+		LogoutPath:   entity.WebLogoutPath,
+		LogoutMethod: entity.WebLogoutMethod,
+	}
+}
+
+func (h *BaseHandler) GetCopyright() string {
+	return fmt.Sprintf(`Copyright &copy; <a href="https://github.com/gendutski/rap-c" target="_blank">Rap-C</a> %s`, time.Now().Format("2006"))
 }

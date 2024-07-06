@@ -12,12 +12,11 @@ import (
 const (
 	storagePath  string = "storage"
 	templatePath string = "templates"
-	layoutPath   string = "layout.html"
 )
 
 type Renderer struct {
 	autoReloadTemplate bool // not for production
-	keys               map[string][]string
+	keys               map[string][][]string
 	templates          map[string]*Templates
 }
 
@@ -27,13 +26,13 @@ type Templates struct {
 }
 
 func NewRenderer(autoReloadTemplate bool) (*Renderer, error) {
-	keys := map[string][]string{
-		"401.html":          {"401.html"},
-		"404.html":          {"404.html"},
-		"error.html":        {"error.html"},
-		"login.html":        {"login.html"},
-		"pass-changer.html": {"pass-changer.html"},
-		"profile.html":      {"profile.html"},
+	keys := map[string][][]string{
+		"401.html":          {{"401.html"}},
+		"404.html":          {{"404.html"}},
+		"error.html":        {{"error.html"}},
+		"login.html":        {{"login.html"}},
+		"pass-changer.html": {{"pass-changer.html"}},
+		"profile.html":      {{"layouts", "layout.html"}, {"layouts", "sidebar-menu.html"}, {"profile", "index.html"}},
 	}
 
 	templates, err := loadTemplates(keys)
@@ -43,7 +42,7 @@ func NewRenderer(autoReloadTemplate bool) (*Renderer, error) {
 	return &Renderer{autoReloadTemplate: autoReloadTemplate, keys: keys, templates: templates}, nil
 }
 
-func loadTemplates(keys map[string][]string) (map[string]*Templates, error) {
+func loadTemplates(keys map[string][][]string) (map[string]*Templates, error) {
 	templates := make(map[string]*Templates)
 	for key, values := range keys {
 		if len(values) == 0 {
@@ -52,7 +51,9 @@ func loadTemplates(keys map[string][]string) (map[string]*Templates, error) {
 
 		var files []string
 		for _, v := range values {
-			files = append(files, filepath.Join(storagePath, templatePath, v))
+			_path := []string{storagePath, templatePath}
+			_path = append(_path, v...)
+			files = append(files, filepath.Join(_path...))
 		}
 
 		tmpl, err := template.ParseFiles(files...)
@@ -62,7 +63,7 @@ func loadTemplates(keys map[string][]string) (map[string]*Templates, error) {
 
 		templates[key] = &Templates{
 			Template:        tmpl,
-			ExecuteTemplate: values[0],
+			ExecuteTemplate: values[0][len(values[0])-1:][0], // first template will get execute
 		}
 	}
 	return templates, nil
@@ -84,7 +85,8 @@ func (r *Renderer) Render(
 	}
 
 	if tmpl, ok := r.templates[name]; ok {
-		err = tmpl.Template.ExecuteTemplate(w, tmpl.ExecuteTemplate, data)
+		// err = tmpl.Template.ExecuteTemplate(w, tmpl.ExecuteTemplate, data)
+		err = tmpl.Template.Execute(w, data)
 		if err != nil {
 			return fmt.Errorf("failed render template: %s", err.Error())
 		}

@@ -4,6 +4,8 @@ const (
 	// path
 	WebLoginPath          string = "/login"
 	WebPasswordChangePath string = "/password-change"
+	WebLogoutPath         string = "/logout"
+	WebLogoutMethod       string = "post"
 
 	// web route
 	LoginRouteName         string = "loginPage"

@@ -14,6 +14,8 @@ type UserUsecase interface {
 	Create(ctx context.Context, payload *entity.CreateUserPayload, author *entity.User) (*entity.User, string, error)
 	// attempt to login with email and password
 	AttemptLogin(ctx context.Context, payload *entity.AttemptLoginPayload) (*entity.User, error)
+	// attempt to login with guest account if exists
+	AttemptGuestLogin(ctx context.Context) (*entity.User, error)
 	// convert user to jwt token
 	GenerateJwtToken(ctx context.Context, user *entity.User) (string, error)
 	// validate jwt token into user

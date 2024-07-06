@@ -20,6 +20,8 @@ const (
 type UserPage interface {
 	// login page
 	Login(e echo.Context) error
+	// guest login
+	GuestLogin(e echo.Context) error
 	// post login form
 	PostLogin(e echo.Context) error
 	// post logout
@@ -89,12 +91,41 @@ func (h *userHandler) Login(e echo.Context) error {
 	}
 
 	return e.Render(http.StatusOK, "login.html", map[string]interface{}{
-		"emailValue":      emailValue,
-		"passwordValue":   passValue,
-		"loginError":      string(loginError),
-		"loginFormMethod": routeMap.Get(entity.PostLoginRouteName, "method"),
-		"loginFormAction": routeMap.Get(entity.PostLoginRouteName, "path"),
+		"enableGuest":      h.cfg.EnableGuestLogin,
+		"emailValue":       emailValue,
+		"passwordValue":    passValue,
+		"loginError":       string(loginError),
+		"guestLoginMethod": routeMap.Get(entity.GuestLoginRouteName, "method"),
+		"guestLoginAction": routeMap.Get(entity.GuestLoginRouteName, "path"),
+		"loginFormMethod":  routeMap.Get(entity.PostLoginRouteName, "method"),
+		"loginFormAction":  routeMap.Get(entity.PostLoginRouteName, "path"),
 	})
+}
+
+func (h *userHandler) GuestLogin(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	// get user
+	user, err := h.userUsecase.AttemptGuestLogin(ctx)
+	if err != nil {
+		return err
+	}
+
+	// generate token
+	token, err := h.userUsecase.GenerateJwtToken(ctx, user)
+	if err != nil {
+		return err
+	}
+
+	// init token session
+	tokenSess := entity.InitSession(e.Request(), e.Response(), h.store, entity.SessionID, h.cfg.EnableWarnFileLog)
+	tokenSess.Set(entity.TokenSessionName, token)
+
+	// map route
+	routeMap := helper.RouteMap(e.Echo().Routes())
+	authorizedPathRedirect := routeMap.Get(entity.DefaultAuthorizedRouteRedirect, "path")
+
+	return e.Redirect(http.StatusMovedPermanently, authorizedPathRedirect)
 }
 
 func (h *userHandler) PostLogin(e echo.Context) error {

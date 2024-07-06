@@ -40,6 +40,7 @@ func SetWebRoute(e *echo.Echo, h *WebHandler) {
 
 	// login page
 	e.GET(entity.WebLoginPath, h.UserPage.Login).Name = entity.LoginRouteName
+	e.POST("/guest-login", h.UserPage.GuestLogin).Name = entity.GuestLoginRouteName
 	e.POST("/submit-login", h.UserPage.PostLogin).Name = entity.PostLoginRouteName
 	e.POST("/submit-logout", h.UserPage.PostLogout).Name = entity.PostLogoutRouteName
 

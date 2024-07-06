@@ -30,10 +30,14 @@ const (
 	ValidateTokenGuestNotAcceptedMessage string = "this page cannot accessed by guest"
 	PasswordMustBeChanged                int    = 40302
 	PasswordMustBeChangedMessage         string = "password must be changed"
+	AttemptGuestLoginDisabled            int    = 40303
+	AttemptGuestLoginDisabledMessage     string = "guest login disabled"
 
 	// not founc
-	UsernameNotFound        int    = 40401
-	UsernameNotFoundMessage string = "user `%s` not found"
+	UsernameNotFound                 int    = 40401
+	UsernameNotFoundMessage          string = "user `%s` not found"
+	AttemptGuestLoginNotFound        int    = 40402
+	AttemptGuestLoginNotFoundMessage string = "guest user not found"
 
 	// internal error
 	CreateUserError               int    = 50001
@@ -44,7 +48,8 @@ const (
 	GetAuthorFromJwtError         int    = 50004
 	GeneratingEmailHTMLError      int    = 50005
 	GeneratingEmailPlainTextError int    = 50006
-	RenewPasswordError            int    = 500007
+	RenewPasswordError            int    = 50007
+	AttemptGuestLoginError        int    = 50008
 	SessionError                  int    = 50099
 	SessionErrorMessage           string = "session error"
 )

@@ -7,6 +7,7 @@ const (
 
 	// web route
 	LoginRouteName         string = "loginPage"
+	GuestLoginRouteName    string = "guestLoginPage"
 	PostLoginRouteName     string = "submitLogin"
 	PostLogoutRouteName    string = "submitLogout"
 	ProfileRouteName       string = "profile"

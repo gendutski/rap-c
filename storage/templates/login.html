@@ -68,11 +68,16 @@
                                         <button type="submit" class="btn btn-dark btn-user btn-block">
                                             <i class="fa-solid fa-door-open"></i> Login
                                         </button>
+                                    </form>
+
+                                    {{if .enableGuest}}
+                                    <form class="user" method="{{.guestLoginMethod}}" action="{{.guestLoginAction}}">
                                         <hr>
-                                        <button class="btn btn-facebook btn-user btn-block">
+                                        <button class="btn btn-facebook btn-user btn-block" type="submit">
                                             <i class="fa-solid fa-masks-theater"></i> Login as Guest
                                         </button>
                                     </form>
+                                    {{end}}
                                     <hr>
                                     <div class="text-center">
                                         <a class="small" href="forgot-password.html">Forgot Password?</a>
@@ -112,7 +117,7 @@
                 gravity: "top",
                 position: "right",
                 style: {
-                    background: "linear-gradient(to right, #7d4832, #2c1c19)"
+                    background: "linear-gradient(to right, #ff0000, #dd0000)"
                 }
             }).showToast();
         }

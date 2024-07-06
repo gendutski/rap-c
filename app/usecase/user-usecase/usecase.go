@@ -138,6 +138,32 @@ func (uc *usecase) AttemptLogin(ctx context.Context, payload *entity.AttemptLogi
 	return user, nil
 }
 
+func (uc *usecase) AttemptGuestLogin(ctx context.Context) (*entity.User, error) {
+	if !uc.cfg.EnableGuestLogin {
+		return nil, &echo.HTTPError{
+			Code:     http.StatusForbidden,
+			Message:  entity.AttemptGuestLoginDisabledMessage,
+			Internal: entity.NewInternalError(entity.AttemptGuestLoginDisabled, entity.AttemptGuestLoginDisabledMessage),
+		}
+	}
+	users, err := uc.userRepo.GetUsersByRequest(ctx, &entity.GetUserListRequest{GuestOnly: true, Page: 1})
+	if err != nil {
+		return nil, &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.AttemptGuestLoginError, err.Error()),
+		}
+	}
+	if len(users) == 0 {
+		return nil, &echo.HTTPError{
+			Code:     http.StatusNotFound,
+			Message:  entity.AttemptGuestLoginNotFoundMessage,
+			Internal: entity.NewInternalError(entity.AttemptGuestLoginNotFound, entity.AttemptGuestLoginNotFoundMessage),
+		}
+	}
+	return users[0], nil
+}
+
 func (uc *usecase) GenerateJwtToken(ctx context.Context, user *entity.User) (string, error) {
 	claims := jwt.MapClaims{
 		tokenStrID:    user.ID,

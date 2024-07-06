@@ -90,6 +90,7 @@ type GetUserListRequest struct {
 	Show            string     `query:"show" json:"show"`
 	SortField       string     `query:"sortField" json:"sortField"`
 	DescendingOrder bool       `query:"descendingOrder" json:"descendingOrder"`
+	GuestOnly       bool       `query:"-" json:"-"`
 	Limit           int        `query:"limit" json:"limit"`
 	Page            Pagination `query:"page" json:"page"`
 }

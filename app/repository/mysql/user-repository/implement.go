@@ -145,5 +145,8 @@ func (r *repo) renderUsersQuery(req *entity.GetUserListRequest) *gorm.DB {
 			qry = qry.Where("disabled = ?", true)
 		}
 	}
+	if req.GuestOnly {
+		qry = qry.Where("is_guest = ?", true)
+	}
 	return qry
 }

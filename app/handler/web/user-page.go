@@ -245,6 +245,6 @@ func (h *userHandler) Profile(e echo.Context) error {
 	return e.Render(http.StatusOK, "profile.html", map[string]interface{}{
 		"author":  author,
 		"title":   "Profile",
-		"layouts": h.BaseHandler.GetLayouts(),
+		"layouts": h.BaseHandler.GetLayouts("profile"),
 	})
 }

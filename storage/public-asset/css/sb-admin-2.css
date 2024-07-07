@@ -6490,6 +6490,10 @@ button.bg-dark:focus {
   background-color: #42444e !important;
 }
 
+.bg-rapc-light {
+  background-color: #dfc7b6 !important;
+}
+
 .bg-white {
   background-color: #fff !important;
 }

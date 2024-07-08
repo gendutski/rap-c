@@ -89,6 +89,7 @@ func (uc *usecase) ResetPassword(user *entity.User, token *entity.PasswordResetT
 
 	// encode email & password
 	params := url.Values{}
+	params.Add("email", user.Email)
 	params.Add("token", token.Token)
 
 	// init hermes email

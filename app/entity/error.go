@@ -16,6 +16,8 @@ const (
 	ValidateRenewPasswordFailed        int    = 40006
 	RenewPasswordUnchanged             int    = 40007
 	RenewPasswordUnchangedMessage      string = "you cannot use old password for new password"
+	ValidateResetTokenNotValid         int    = 40008
+	ValidateResetTokenNotValidMessage  string = "token not valid"
 	MysqlDuplicateKeyError             int    = 40099
 	MysqlDuplicateKeyErrorMessage      string = "duplicate key error"
 
@@ -54,6 +56,7 @@ const (
 	AttemptGuestLoginError             int    = 50008
 	GenerateTokenError                 int    = 50009
 	RepoGenerateUserResetPasswordError int    = 50010
+	RepoValidateResetTokenError        int    = 50011
 	SessionError                       int    = 50099
 	SessionErrorMessage                string = "session error"
 )

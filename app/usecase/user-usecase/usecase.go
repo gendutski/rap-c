@@ -331,3 +331,10 @@ func (uc *usecase) RequestResetPassword(ctx context.Context, email string) (*ent
 
 	return user, token, nil
 }
+
+func (uc *usecase) ValidateResetPassword(ctx context.Context, email string, token string) error {
+	if email == "" || token == "" {
+		return echo.NewHTTPError(http.StatusBadRequest)
+	}
+	return uc.userRepo.ValidateResetToken(ctx, email, token)
+}

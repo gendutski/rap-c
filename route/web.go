@@ -32,7 +32,7 @@ type WebHandler struct {
 func SetWebRoute(e *echo.Echo, h *WebHandler) {
 	// home page
 	e.GET("/", func(c echo.Context) error {
-		return c.Redirect(http.StatusMovedPermanently, "/login")
+		return c.Redirect(http.StatusFound, "/login")
 	})
 	// asset folder
 	e.Static("/assets", filepath.Join(storagePath, assetPath))
@@ -47,6 +47,8 @@ func SetWebRoute(e *echo.Echo, h *WebHandler) {
 	// reset password
 	e.GET("/request-reset", h.UserPage.RequestResetPassword).Name = entity.RequestResetPasswordName
 	e.POST("/request-reset", h.UserPage.SubmitRequestResetPassword).Name = entity.PostRequestResetPasswordName
+	e.GET(entity.WebResetPasswordPath, h.UserPage.ResetPassword).Name = entity.ResetPasswordName
+	e.POST(entity.WebResetPasswordPath, echo.NotFoundHandler).Name = entity.SubmitResetPasswordName
 
 	// password must change
 	e.GET(entity.WebPasswordChangePath, h.UserPage.PasswordChanger, middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserUsecase, h.GuestAccepted))
@@ -86,13 +88,17 @@ func WebErrorHandler(e *echo.Echo, err error, c echo.Context) {
 	}
 
 	if report.Code == http.StatusNotFound {
-		c.Render(http.StatusNotFound, "404.html", nil)
+		c.Render(http.StatusNotFound, "404.html", map[string]interface{}{
+			"code":    report.Code,
+			"title":   http.StatusText(report.Code),
+			"message": report.Message,
+		})
 		return
 	} else if report.Code == http.StatusUnauthorized {
 		c.Render(http.StatusUnauthorized, "401.html", nil)
 		return
 	}
-	c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
+	c.Render(report.Code, "error.html", map[string]interface{}{
 		"code":    report.Code,
 		"title":   http.StatusText(report.Code),
 		"message": report.Message,

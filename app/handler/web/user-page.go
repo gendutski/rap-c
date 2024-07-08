@@ -2,6 +2,7 @@ package web
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"rap-c/app/entity"
 	"rap-c/app/handler"
@@ -36,6 +37,8 @@ type UserPage interface {
 	RequestResetPassword(e echo.Context) error
 	// submit request reset password page
 	SubmitRequestResetPassword(e echo.Context) error
+	// reset password page
+	ResetPassword(e echo.Context) error
 }
 
 func NewUserPage(cfg config.Config, store sessions.Store, userUsecase contract.UserUsecase, mailUsecase contract.MailUsecase) UserPage {
@@ -65,7 +68,7 @@ func (h *userHandler) Login(e echo.Context) error {
 	ctx := e.Request().Context()
 	_, _, err := h.userUsecase.ValidateSessionJwtToken(ctx, e.Request(), e.Response(), h.store, h.cfg.EnableGuestLogin)
 	if err == nil {
-		return e.Redirect(http.StatusMovedPermanently, authorizedPathRedirect)
+		return e.Redirect(http.StatusFound, authorizedPathRedirect)
 	}
 
 	// load session
@@ -148,7 +151,7 @@ func (h *userHandler) GuestLogin(e echo.Context) error {
 	routeMap := helper.RouteMap(e.Echo().Routes())
 	authorizedPathRedirect := routeMap.Get(entity.DefaultAuthorizedRouteRedirect, "path")
 
-	return e.Redirect(http.StatusMovedPermanently, authorizedPathRedirect)
+	return e.Redirect(http.StatusFound, authorizedPathRedirect)
 }
 
 func (h *userHandler) PostLogin(e echo.Context) error {
@@ -174,7 +177,7 @@ func (h *userHandler) PostLogin(e echo.Context) error {
 		if herr, ok := err.(*echo.HTTPError); ok {
 			sess.Set("email", e.FormValue("email"))
 			sess.Set("error", herr.Message)
-			return e.Redirect(http.StatusMovedPermanently, loginPathRedirect)
+			return e.Redirect(http.StatusFound, loginPathRedirect)
 		}
 		return err
 	}
@@ -185,7 +188,7 @@ func (h *userHandler) PostLogin(e echo.Context) error {
 		if herr, ok := err.(*echo.HTTPError); ok {
 			sess.Set("email", e.FormValue("email"))
 			sess.Set("error", herr.Message)
-			return e.Redirect(http.StatusMovedPermanently, loginPathRedirect)
+			return e.Redirect(http.StatusFound, loginPathRedirect)
 		}
 		return err
 	}
@@ -194,7 +197,7 @@ func (h *userHandler) PostLogin(e echo.Context) error {
 	tokenSess := entity.InitSession(e.Request(), e.Response(), h.store, entity.SessionID, h.cfg.EnableWarnFileLog)
 	tokenSess.Set(entity.TokenSessionName, token)
 
-	return e.Redirect(http.StatusMovedPermanently, authorizedPathRedirect)
+	return e.Redirect(http.StatusFound, authorizedPathRedirect)
 }
 
 func (h *userHandler) PostLogout(e echo.Context) error {
@@ -207,7 +210,7 @@ func (h *userHandler) PostLogout(e echo.Context) error {
 	loginPathRedirect := routeMap.Get(entity.LoginRouteName, "path")
 
 	// redirect
-	return e.Redirect(http.StatusMovedPermanently, loginPathRedirect)
+	return e.Redirect(http.StatusFound, loginPathRedirect)
 }
 
 func (h *userHandler) PasswordChanger(e echo.Context) error {
@@ -255,7 +258,7 @@ func (h *userHandler) SubmitPasswordChanger(e echo.Context) error {
 	defaultRedirect := routeMap.Get(entity.DefaultAuthorizedRouteRedirect, "path")
 
 	// redirect
-	return e.Redirect(http.StatusMovedPermanently, defaultRedirect)
+	return e.Redirect(http.StatusFound, defaultRedirect)
 }
 
 func (h *userHandler) Profile(e echo.Context) error {
@@ -281,7 +284,7 @@ func (h *userHandler) RequestResetPassword(e echo.Context) error {
 	ctx := e.Request().Context()
 	_, _, err := h.userUsecase.ValidateSessionJwtToken(ctx, e.Request(), e.Response(), h.store, h.cfg.EnableGuestLogin)
 	if err == nil {
-		return e.Redirect(http.StatusMovedPermanently, authorizedPathRedirect)
+		return e.Redirect(http.StatusFound, authorizedPathRedirect)
 	}
 
 	// load session
@@ -333,7 +336,7 @@ func (h *userHandler) SubmitRequestResetPassword(e echo.Context) error {
 	if err != nil {
 		if herr, ok := err.(*echo.HTTPError); ok {
 			sess.Set("error", herr.Message)
-			return e.Redirect(http.StatusMovedPermanently, requestResetRedirect)
+			return e.Redirect(http.StatusFound, requestResetRedirect)
 		}
 		return err
 	}
@@ -343,11 +346,33 @@ func (h *userHandler) SubmitRequestResetPassword(e echo.Context) error {
 	if err != nil {
 		if herr, ok := err.(*echo.HTTPError); ok {
 			sess.Set("error", herr.Message)
-			return e.Redirect(http.StatusMovedPermanently, requestResetRedirect)
+			return e.Redirect(http.StatusFound, requestResetRedirect)
 		}
 		return err
 	}
 
 	sess.Set("info", "email for request reset password has been sent")
-	return e.Redirect(http.StatusMovedPermanently, loginPathRedirect)
+	return e.Redirect(http.StatusFound, loginPathRedirect)
+}
+
+func (h *userHandler) ResetPassword(e echo.Context) error {
+	ctx := e.Request().Context()
+	email := e.QueryParam("email")
+	token := e.QueryParam("token")
+	log.Println("FUCK")
+
+	err := h.userUsecase.ValidateResetPassword(ctx, email, token)
+	if err != nil {
+		return err
+	}
+
+	// map route
+	routeMap := helper.RouteMap(e.Echo().Routes())
+
+	return e.Render(http.StatusOK, "reset-password.html", map[string]interface{}{
+		"email":          email,
+		"token":          token,
+		"passwordMethod": routeMap.Get(entity.SubmitResetPasswordName, "method"),
+		"passwordAction": routeMap.Get(entity.SubmitResetPasswordName, "path"),
+	})
 }

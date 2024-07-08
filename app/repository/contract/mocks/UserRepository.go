@@ -122,3 +122,17 @@ func (mr *MockUserRepositoryMockRecorder) Update(ctx, user interface{}) *gomock.
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUserRepository)(nil).Update), ctx, user)
 }
+
+// ValidateResetToken mocks base method.
+func (m *MockUserRepository) ValidateResetToken(ctx context.Context, email, token string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidateResetToken", ctx, email, token)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ValidateResetToken indicates an expected call of ValidateResetToken.
+func (mr *MockUserRepositoryMockRecorder) ValidateResetToken(ctx, email, token interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateResetToken", reflect.TypeOf((*MockUserRepository)(nil).ValidateResetToken), ctx, email, token)
+}

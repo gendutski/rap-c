@@ -17,6 +17,8 @@ const (
 	RenewPasswordRouteName       string = "renewPassword"
 	RequestResetPasswordName     string = "requestReset"
 	PostRequestResetPasswordName string = "submitRequestReset"
+	ResetPasswordName            string = "resetPassword"
+	SubmitResetPasswordName      string = "submitResetPassword"
 
 	// api route
 

@@ -16,7 +16,7 @@ func ValidateJwtTokenFromSession(store sessions.Store, jwtUserContextKey string,
 			user, token, err := userUsecase.ValidateSessionJwtToken(ctx, c.Request(), c.Response(), store, guestAccepted)
 			if err != nil {
 				if herr, ok := err.(*echo.HTTPError); ok && herr.Code == http.StatusUnauthorized {
-					return c.Redirect(http.StatusMovedPermanently, entity.WebLoginPath)
+					return c.Redirect(http.StatusFound, entity.WebLoginPath)
 				}
 				return err
 			}

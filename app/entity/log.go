@@ -20,13 +20,14 @@ const (
 type RapCLog struct {
 	log               *logrus.Logger
 	uri               string
+	method            string
 	status            int
 	message           string
 	err               error
 	enableWarnFileLog bool
 }
 
-func InitLog(uri, message string, status int, err error, enableWarnFileLog bool) RapCLog {
+func InitLog(uri, method, message string, status int, err error, enableWarnFileLog bool) RapCLog {
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
@@ -34,6 +35,7 @@ func InitLog(uri, message string, status int, err error, enableWarnFileLog bool)
 	return RapCLog{
 		log:               logger,
 		uri:               uri,
+		method:            method,
 		status:            status,
 		message:           message,
 		err:               err,
@@ -44,12 +46,13 @@ func InitLog(uri, message string, status int, err error, enableWarnFileLog bool)
 func (e RapCLog) Log() {
 	logrusFields := logrus.Fields{
 		"URI":    e.uri,
-		"status": e.status,
-		"error":  e.err,
+		"Method": e.method,
+		"Status": e.status,
+		"Error":  e.err,
 	}
 
 	if e.err == nil {
-		delete(logrusFields, "error")
+		delete(logrusFields, "Error")
 		e.log.WithFields(logrusFields).Info(e.message)
 	} else {
 		// create error log file

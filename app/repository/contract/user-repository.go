@@ -18,4 +18,6 @@ type UserRepository interface {
 	GetUsersByRequest(ctx context.Context, req *entity.GetUserListRequest) ([]*entity.User, error)
 	// set user reset password
 	GenerateUserResetPassword(ctx context.Context, email string) (*entity.PasswordResetToken, error)
+	// validate reset password token
+	ValidateResetToken(ctx context.Context, email string, token string) error
 }

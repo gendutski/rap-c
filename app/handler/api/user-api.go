@@ -66,6 +66,7 @@ func (h *userHandler) Create(e echo.Context) error {
 	go func() {
 		entity.InitLog(
 			e.Request().RequestURI,
+			e.Request().Method,
 			fmt.Sprintf("Send welcome email to %s", user.Email),
 			http.StatusOK,
 			nil,
@@ -75,6 +76,7 @@ func (h *userHandler) Create(e echo.Context) error {
 		if err != nil {
 			entity.InitLog(
 				e.Request().RequestURI,
+				e.Request().Method,
 				"send welcome mail",
 				http.StatusOK,
 				err,

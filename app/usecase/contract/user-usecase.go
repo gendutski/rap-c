@@ -32,4 +32,6 @@ type UserUsecase interface {
 	GetUserByUsername(ctx context.Context, username string) (*entity.User, error)
 	// submit reset password request
 	RequestResetPassword(ctx context.Context, email string) (*entity.User, *entity.PasswordResetToken, error)
+	// subit reset password
+	ValidateResetPassword(ctx context.Context, email string, token string) error
 }

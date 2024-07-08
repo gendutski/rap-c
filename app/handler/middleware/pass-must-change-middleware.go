@@ -17,7 +17,7 @@ func PasswordNotChanged(jwtUserContextKey string, isAPI bool) echo.MiddlewareFun
 				if isAPI {
 					return echo.NewHTTPError(http.StatusUnauthorized)
 				} else {
-					return c.Redirect(http.StatusMovedPermanently, entity.WebLoginPath)
+					return c.Redirect(http.StatusFound, entity.WebLoginPath)
 				}
 			}
 
@@ -29,7 +29,7 @@ func PasswordNotChanged(jwtUserContextKey string, isAPI bool) echo.MiddlewareFun
 						Internal: entity.NewInternalError(entity.PasswordMustBeChanged, entity.PasswordMustBeChangedMessage),
 					}
 				} else {
-					return c.Redirect(http.StatusMovedPermanently, entity.WebPasswordChangePath)
+					return c.Redirect(http.StatusFound, entity.WebPasswordChangePath)
 				}
 			}
 

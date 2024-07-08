@@ -10,7 +10,7 @@ import (
 func InitSession(r *http.Request, w http.ResponseWriter, store sessions.Store, sessionName string, enableWarnFileLog bool) *Session {
 	sess, err := store.Get(r, sessionName)
 	if err != nil {
-		InitLog(r.RequestURI, "get session", http.StatusUnauthorized, &echo.HTTPError{
+		InitLog(r.RequestURI, r.Method, "get session", http.StatusUnauthorized, &echo.HTTPError{
 			Code:     http.StatusBadRequest,
 			Message:  SessionErrorMessage,
 			Internal: NewInternalError(SessionError, err.Error()),

@@ -9,6 +9,7 @@ import (
 	"rap-c/app/helper"
 	"rap-c/app/repository/contract"
 	"strings"
+	"time"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/labstack/echo/v4"
@@ -17,11 +18,12 @@ import (
 )
 
 const (
-	minQueryLimit          int    = 10
-	maxQueryLimit          int    = 100
-	mysqlDuplicateErrorNum uint16 = 1062
-	emailUniqueKeyName     string = "users.uni_users_email"
-	usernameUniqueKeyName  string = "users.uni_users_username"
+	minQueryLimit          int           = 10
+	maxQueryLimit          int           = 100
+	mysqlDuplicateErrorNum uint16        = 1062
+	emailUniqueKeyName     string        = "users.uni_users_email"
+	usernameUniqueKeyName  string        = "users.uni_users_username"
+	resetTokenExpiration   time.Duration = time.Hour
 )
 
 type repo struct {
@@ -146,7 +148,7 @@ func (r *repo) GenerateUserResetPassword(ctx context.Context, email string) (*en
 	err = r.db.
 		Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "email"}},
-			DoUpdates: clause.AssignmentColumns([]string{"token"}),
+			DoUpdates: clause.AssignmentColumns([]string{"token", "updated_at"}),
 		}).
 		Create(&result).Error
 	if err != nil {
@@ -157,6 +159,35 @@ func (r *repo) GenerateUserResetPassword(ctx context.Context, email string) (*en
 		}
 	}
 	return &result, nil
+}
+
+func (r *repo) ValidateResetToken(ctx context.Context, email string, token string) error {
+	var result entity.PasswordResetToken
+	// get token from db
+	err := r.db.Where("email = ?", email).First(&result).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &echo.HTTPError{
+				Code:     http.StatusNotFound,
+				Message:  entity.ValidateResetTokenNotValidMessage,
+				Internal: entity.NewInternalError(entity.ValidateResetTokenNotValid, entity.ValidateResetTokenNotValidMessage),
+			}
+		}
+		return &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.RepoValidateResetTokenError, err.Error()),
+		}
+	}
+	// validate token & expired date
+	if result.Token != token || time.Now().After(result.UpdatedAt.Add(resetTokenExpiration)) {
+		return &echo.HTTPError{
+			Code:     http.StatusNotFound,
+			Message:  entity.ValidateResetTokenNotValidMessage,
+			Internal: entity.NewInternalError(entity.ValidateResetTokenNotValid, entity.ValidateResetTokenNotValidMessage),
+		}
+	}
+	return nil
 }
 
 func (r *repo) renderUsersQuery(req *entity.GetUserListRequest) *gorm.DB {

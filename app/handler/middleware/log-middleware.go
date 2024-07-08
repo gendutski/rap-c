@@ -14,7 +14,7 @@ func SetLog(enableWarnFileLog bool) echo.MiddlewareFunc {
 		LogError:    true,
 		HandleError: true, // forwards error to the global error handler, so it can decide appropriate status code
 		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
-			entity.InitLog(v.URI, "request", v.Status, v.Error, enableWarnFileLog).Log()
+			entity.InitLog(v.URI, c.Request().Method, "request", v.Status, v.Error, enableWarnFileLog).Log()
 			return nil
 		},
 	})

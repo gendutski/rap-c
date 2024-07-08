@@ -32,13 +32,18 @@ type UserPage interface {
 	SubmitPasswordChanger(e echo.Context) error
 	// profile page
 	Profile(e echo.Context) error
+	// request reset password page
+	RequestResetPassword(e echo.Context) error
+	// submit request reset password page
+	SubmitRequestResetPassword(e echo.Context) error
 }
 
-func NewUserPage(cfg config.Config, store sessions.Store, userUsecase contract.UserUsecase) UserPage {
+func NewUserPage(cfg config.Config, store sessions.Store, userUsecase contract.UserUsecase, mailUsecase contract.MailUsecase) UserPage {
 	return &userHandler{
 		cfg:         cfg,
 		store:       store,
 		userUsecase: userUsecase,
+		mailUsecase: mailUsecase,
 		BaseHandler: handler.NewBaseHandler(cfg),
 	}
 }
@@ -47,6 +52,7 @@ type userHandler struct {
 	cfg         config.Config
 	store       sessions.Store
 	userUsecase contract.UserUsecase
+	mailUsecase contract.MailUsecase
 	BaseHandler *handler.BaseHandler
 }
 
@@ -90,15 +96,32 @@ func (h *userHandler) Login(e echo.Context) error {
 		loginError, _ = json.Marshal(loginErr)
 	}
 
+	// get info
+	var infoMsg []string
+	var infoMessages []byte = []byte("[]")
+	if _infoMsg := sess.Flash("info"); _infoMsg != nil {
+		switch _val := _infoMsg.(type) {
+		case []string:
+			infoMsg = append(infoMsg, _val...)
+		case string:
+			infoMsg = append(infoMsg, _val)
+		}
+	}
+	if len(infoMsg) > 0 {
+		infoMessages, _ = json.Marshal(infoMsg)
+	}
+
 	return e.Render(http.StatusOK, "login.html", map[string]interface{}{
 		"enableGuest":      h.cfg.EnableGuestLogin,
 		"emailValue":       emailValue,
 		"passwordValue":    passValue,
 		"loginError":       string(loginError),
+		"infoMessages":     string(infoMessages),
 		"guestLoginMethod": routeMap.Get(entity.GuestLoginRouteName, "method"),
 		"guestLoginAction": routeMap.Get(entity.GuestLoginRouteName, "path"),
 		"loginFormMethod":  routeMap.Get(entity.PostLoginRouteName, "method"),
 		"loginFormAction":  routeMap.Get(entity.PostLoginRouteName, "path"),
+		"resetPath":        routeMap.Get(entity.RequestResetPasswordName, "path"),
 	})
 }
 
@@ -247,4 +270,84 @@ func (h *userHandler) Profile(e echo.Context) error {
 		"title":   "Profile",
 		"layouts": h.BaseHandler.GetLayouts("profile"),
 	})
+}
+
+func (h *userHandler) RequestResetPassword(e echo.Context) error {
+	// init router
+	routeMap := helper.RouteMap(e.Echo().Routes())
+	authorizedPathRedirect := routeMap.Get(entity.DefaultAuthorizedRouteRedirect, "path")
+
+	// check if token session is exists
+	ctx := e.Request().Context()
+	_, _, err := h.userUsecase.ValidateSessionJwtToken(ctx, e.Request(), e.Response(), h.store, h.cfg.EnableGuestLogin)
+	if err == nil {
+		return e.Redirect(http.StatusMovedPermanently, authorizedPathRedirect)
+	}
+
+	// load session
+	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.EnableWarnFileLog)
+
+	// get submit login error
+	var submitErr []string
+	var submitError []byte = []byte("[]")
+	if _submitErr := sess.Flash("error"); _submitErr != nil {
+		switch _val := _submitErr.(type) {
+		case []string:
+			submitErr = append(submitErr, _val...)
+		case string:
+			submitErr = append(submitErr, _val)
+		}
+	}
+	if len(submitErr) > 0 {
+		submitError, _ = json.Marshal(submitErr)
+	}
+
+	return e.Render(http.StatusOK, "request-reset.html", map[string]interface{}{
+		"enableGuest": h.cfg.EnableGuestLogin,
+		"loginError":  string(submitError),
+		"formMethod":  routeMap.Get(entity.PostRequestResetPasswordName, "method"),
+		"formAction":  routeMap.Get(entity.PostRequestResetPasswordName, "path"),
+		"loginPath":   routeMap.Get(entity.LoginRouteName, "path"),
+	})
+}
+
+func (h *userHandler) SubmitRequestResetPassword(e echo.Context) error {
+	// init session
+	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.EnableWarnFileLog)
+
+	// map route
+	routeMap := helper.RouteMap(e.Echo().Routes())
+	loginPathRedirect := routeMap.Get(entity.LoginRouteName, "path")
+	requestResetRedirect := routeMap.Get(entity.RequestResetPasswordName, "path")
+
+	// bind payload
+	payload := new(entity.AttemptLoginPayload)
+	err := e.Bind(payload)
+	if err != nil {
+		return err
+	}
+	ctx := e.Request().Context()
+
+	// get user & token
+	user, token, err := h.userUsecase.RequestResetPassword(ctx, e.FormValue("email"))
+	if err != nil {
+		if herr, ok := err.(*echo.HTTPError); ok {
+			sess.Set("error", herr.Message)
+			return e.Redirect(http.StatusMovedPermanently, requestResetRedirect)
+		}
+		return err
+	}
+
+	// send email
+	err = h.mailUsecase.ResetPassword(user, token)
+	if err != nil {
+		if herr, ok := err.(*echo.HTTPError); ok {
+			sess.Set("error", herr.Message)
+			return e.Redirect(http.StatusMovedPermanently, requestResetRedirect)
+		}
+		return err
+	}
+
+	sess.Set("info", "email for request reset password has been sent")
+	return e.Redirect(http.StatusMovedPermanently, loginPathRedirect)
 }

@@ -113,7 +113,7 @@ func (uc *usecase) AttemptLogin(ctx context.Context, payload *entity.AttemptLogi
 		return nil, &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
 			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.AttemptLoginError, err.Error()),
+			Internal: entity.NewInternalError(entity.RepoGetUserByFieldError, err.Error()),
 		}
 	}
 
@@ -291,6 +291,43 @@ func (uc *usecase) GetUserByUsername(ctx context.Context, username string) (*ent
 				Internal: entity.NewInternalError(entity.UsernameNotFound, message),
 			}
 		}
+		return nil, &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.RepoGetUserByFieldError, err.Error()),
+		}
 	}
 	return user, nil
+}
+
+func (uc *usecase) RequestResetPassword(ctx context.Context, email string) (*entity.User, *entity.PasswordResetToken, error) {
+	if email == "" {
+		return nil, nil, echo.NewHTTPError(http.StatusBadRequest)
+	}
+
+	// check email
+	user, err := uc.userRepo.GetUserByField(ctx, "email", email)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			message := fmt.Sprintf(entity.EmailNotFoundMessage, email)
+			return nil, nil, &echo.HTTPError{
+				Code:     http.StatusNotFound,
+				Message:  message,
+				Internal: entity.NewInternalError(entity.EmailNotFound, message),
+			}
+		}
+		return nil, nil, &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.RepoGetUserByFieldError, err.Error()),
+		}
+	}
+
+	// generate reset password token
+	token, err := uc.userRepo.GenerateUserResetPassword(ctx, email)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return user, token, nil
 }

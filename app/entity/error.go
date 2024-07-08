@@ -38,20 +38,24 @@ const (
 	UsernameNotFoundMessage          string = "user `%s` not found"
 	AttemptGuestLoginNotFound        int    = 40402
 	AttemptGuestLoginNotFoundMessage string = "guest user not found"
+	EmailNotFound                    int    = 40403
+	EmailNotFoundMessage             string = "email `%s` not found"
 
 	// internal error
-	CreateUserError               int    = 50001
-	CreateUserErrorEmptyAuthor    string = "author is nil"
-	GeneratePasswordError         int    = 50002
-	ValidateTokenDBError          int    = 50003
-	AttemptLoginError             int    = 50003
-	GetAuthorFromJwtError         int    = 50004
-	GeneratingEmailHTMLError      int    = 50005
-	GeneratingEmailPlainTextError int    = 50006
-	RenewPasswordError            int    = 50007
-	AttemptGuestLoginError        int    = 50008
-	SessionError                  int    = 50099
-	SessionErrorMessage           string = "session error"
+	CreateUserError                    int    = 50001
+	CreateUserErrorEmptyAuthor         string = "author is nil"
+	GeneratePasswordError              int    = 50002
+	ValidateTokenDBError               int    = 50003
+	RepoGetUserByFieldError            int    = 50003
+	GetAuthorFromJwtError              int    = 50004
+	GeneratingEmailHTMLError           int    = 50005
+	GeneratingEmailPlainTextError      int    = 50006
+	RenewPasswordError                 int    = 50007
+	AttemptGuestLoginError             int    = 50008
+	GenerateTokenError                 int    = 50009
+	RepoGenerateUserResetPasswordError int    = 50010
+	SessionError                       int    = 50099
+	SessionErrorMessage                string = "session error"
 )
 
 // for echo.HTTPError.Internal

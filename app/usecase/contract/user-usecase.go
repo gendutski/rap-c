@@ -30,4 +30,6 @@ type UserUsecase interface {
 	GetTotalUserList(ctx context.Context, req *entity.GetUserListRequest) (int64, error)
 	// get user by username
 	GetUserByUsername(ctx context.Context, username string) (*entity.User, error)
+	// submit reset password request
+	RequestResetPassword(ctx context.Context, email string) (*entity.User, *entity.PasswordResetToken, error)
 }

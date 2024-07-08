@@ -13,6 +13,7 @@ import (
 
 const (
 	welcomeSubject string = "Selamat datang di Rap-C"
+	resetSubject   string = "Permintaan reset pasword di Rap-C"
 )
 
 func NewUsecase(cfg config.Config) contract.MailUsecase {
@@ -80,4 +81,60 @@ func (uc *usecase) Welcome(user *entity.User, password string) error {
 	}
 
 	return uc.send(user.Email, welcomeSubject, resText, resHtml)
+}
+
+func (uc *usecase) ResetPassword(user *entity.User, token *entity.PasswordResetToken) error {
+	// init hermes
+	h := uc.initHermes()
+
+	// encode email & password
+	params := url.Values{}
+	params.Add("token", token.Token)
+
+	// init hermes email
+	email := hermes.Email{
+		Body: hermes.Body{
+			Greeting: "Hai",
+			Name:     user.FullName,
+			Intros: []string{
+				"Anda menerima email ini karena permintaan reset password untuk akun anda telah diterima.",
+			},
+			Actions: []hermes.Action{
+				{
+					Instructions: "Silahkan klik tombol dibawah untuk reset password Anda:",
+					Button: hermes.Button{
+						Color: "#DC4D2F",
+						Text:  "Reset your password",
+						Link:  uc.cfg.URL(entity.WebResetPasswordPath) + "?" + params.Encode(),
+					},
+				},
+			},
+			Outros: []string{
+				"Jika Anda tidak meminta reset password, Anda tidak perlu melakukan tindakan lebih lanjut.",
+			},
+			Signature: "Hormat Kami",
+		},
+	}
+
+	// generate html email
+	resHtml, err := h.GenerateHTML(email)
+	if err != nil {
+		return &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.GeneratingEmailHTMLError, err.Error()),
+		}
+	}
+
+	// generate text html
+	resText, err := h.GeneratePlainText(email)
+	if err != nil {
+		return &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.GeneratingEmailPlainTextError, err.Error()),
+		}
+	}
+
+	return uc.send(user.Email, resetSubject, resText, resHtml)
 }

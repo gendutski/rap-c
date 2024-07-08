@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"net/http"
 	"rap-c/app/entity"
+	"rap-c/app/helper"
 	"rap-c/app/repository/contract"
 	"strings"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const (
@@ -125,6 +127,36 @@ func (r *repo) GetUsersByRequest(ctx context.Context, req *entity.GetUserListReq
 		return nil, err
 	}
 	return result, nil
+}
+
+func (r *repo) GenerateUserResetPassword(ctx context.Context, email string) (*entity.PasswordResetToken, error) {
+	token, err := helper.GenerateToken(64)
+	if err != nil {
+		return nil, &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.GenerateTokenError, err.Error()),
+		}
+	}
+
+	result := entity.PasswordResetToken{
+		Email: email,
+		Token: token,
+	}
+	err = r.db.
+		Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "email"}},
+			DoUpdates: clause.AssignmentColumns([]string{"token"}),
+		}).
+		Create(&result).Error
+	if err != nil {
+		return nil, &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.RepoGenerateUserResetPasswordError, err.Error()),
+		}
+	}
+	return &result, nil
 }
 
 func (r *repo) renderUsersQuery(req *entity.GetUserListRequest) *gorm.DB {

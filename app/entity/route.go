@@ -6,14 +6,17 @@ const (
 	WebPasswordChangePath string = "/password-change"
 	WebLogoutPath         string = "/logout"
 	WebLogoutMethod       string = "post"
+	WebResetPasswordPath  string = "/reset-password"
 
 	// web route
-	LoginRouteName         string = "loginPage"
-	GuestLoginRouteName    string = "guestLoginPage"
-	PostLoginRouteName     string = "submitLogin"
-	PostLogoutRouteName    string = "submitLogout"
-	ProfileRouteName       string = "profile"
-	RenewPasswordRouteName string = "renewPassword"
+	LoginRouteName               string = "loginPage"
+	GuestLoginRouteName          string = "guestLoginPage"
+	PostLoginRouteName           string = "submitLogin"
+	PostLogoutRouteName          string = "submitLogout"
+	ProfileRouteName             string = "profile"
+	RenewPasswordRouteName       string = "renewPassword"
+	RequestResetPasswordName     string = "requestReset"
+	PostRequestResetPasswordName string = "submitRequestReset"
 
 	// api route
 

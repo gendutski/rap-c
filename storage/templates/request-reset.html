@@ -9,7 +9,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Rap-C - Login</title>
+    <title>SB Admin 2 - Forgot Password</title>
 
     <!-- Custom fonts for this template-->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" rel="stylesheet"
@@ -43,44 +43,23 @@
                             <div class="col-lg-6">
                                 <div class="p-5">
                                     <div class="text-center">
-                                        <h1 class="h4 text-gray-900 mb-4">Selamat Datang!</h1>
+                                        <h1 class="h4 text-gray-900 mb-2">Lupa Password?</h1>
+                                        <p class="mb-4">Jangan khawatir. Cukup masukkan alamat email anda, 
+                                            dan kami akan kirim email unturk mereset password anda!</p>
                                     </div>
-                                    <form class="user" method="{{.loginFormMethod}}" action="{{.loginFormAction}}">
+                                    <form class="user" method="{{.formMethod}}" action="{{.formAction}}">
                                         <div class="form-group">
                                             <input type="email" class="form-control form-control-user"
                                                 id="exampleInputEmail" aria-describedby="emailHelp"
-                                                placeholder="Masukkan alamat email..." name="email"
-                                                value="{{.emailValue}}" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <input type="password" class="form-control form-control-user"
-                                                id="exampleInputPassword" placeholder="Password" name="password"
-                                                value="{{.passwordValue}}" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <div class="custom-control custom-checkbox small">
-                                                <input type="checkbox" class="custom-control-input" id="rememberMe"
-                                                    name="rememberMe" value="true">
-                                                <label class="custom-control-label" for="rememberMe">Remember
-                                                    Me</label>
-                                            </div>
+                                                placeholder="Masukkan alamat email..." name="email" required>
                                         </div>
                                         <button type="submit" class="btn btn-dark btn-user btn-block">
-                                            <i class="fa-solid fa-door-open"></i> Login
+                                            Reset Password
                                         </button>
                                     </form>
-
-                                    {{if .enableGuest}}
-                                    <form class="user" method="{{.guestLoginMethod}}" action="{{.guestLoginAction}}">
-                                        <hr>
-                                        <button class="btn btn-facebook btn-user btn-block" type="submit">
-                                            <i class="fa-solid fa-masks-theater"></i> Login sebagai tamu
-                                        </button>
-                                    </form>
-                                    {{end}}
                                     <hr>
                                     <div class="text-center">
-                                        <a class="small" href="{{.resetPath}}">Lupa Password?</a>
+                                        <a class="small" href="{{.loginPath}}">Sudah punya akun? Login!</a>
                                     </div>
                                 </div>
                             </div>
@@ -91,16 +70,16 @@
             </div>
 
         </div>
+
     </div>
 
     <div id="errorBox" style="display: none;">{{.loginError}}</div>
-    <div id="infoBox" style="display: none;">{{.infoMessages}}</div>
 
     <!-- Bootstrap core JavaScript-->
     <script src="/assets/vendor/jquery/jquery.min.js"></script>
     <script src="/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Core plugin Ja/assets/vaScript-->
+    <!-- Core plugin JavaScript-->
     <script src="/assets/vendor/jquery-easing/jquery.easing.min.js"></script>
 
     <!-- toastify js -->
@@ -123,31 +102,11 @@
             }).showToast();
         }
 
-        function toastoInfo(message) {
-            Toastify({
-                text: message,
-                duration: 3000,
-                close: true,
-                gravity: "top",
-                position: "right",
-                style: {
-                    background: "linear-gradient(to right, #4fbe87, #333333)"
-                }
-            }).showToast();
-        }
-        
         const loginError = JSON.parse(document.getElementById("errorBox").innerHTML);
-        const infoMessages = JSON.parse(document.getElementById("infoBox").innerHTML);
         $(function () {
             if (loginError.length > 0) {
                 for (let i = 0; i < loginError.length; i++) {
                     toastFail(loginError[i])
-                }
-            }
-
-            if (infoMessages.length > 0) {
-                for (let i = 0; i < infoMessages.length; i++) {
-                    toastoInfo(infoMessages[i])
                 }
             }
         });

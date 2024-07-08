@@ -44,6 +44,10 @@ func SetWebRoute(e *echo.Echo, h *WebHandler) {
 	e.POST("/submit-login", h.UserPage.PostLogin).Name = entity.PostLoginRouteName
 	e.POST(entity.WebLogoutPath, h.UserPage.PostLogout).Name = entity.PostLogoutRouteName
 
+	// reset password
+	e.GET("/request-reset", h.UserPage.RequestResetPassword).Name = entity.RequestResetPasswordName
+	e.POST("/request-reset", h.UserPage.SubmitRequestResetPassword).Name = entity.PostRequestResetPasswordName
+
 	// password must change
 	e.GET(entity.WebPasswordChangePath, h.UserPage.PasswordChanger, middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserUsecase, h.GuestAccepted))
 	e.POST(entity.WebPasswordChangePath, h.UserPage.SubmitPasswordChanger, middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserUsecase, h.GuestAccepted)).Name = entity.RenewPasswordRouteName

@@ -58,7 +58,7 @@ func serve() {
 	sessionStore := sessions.NewCookieStore([]byte(cfg.SessionKey))
 
 	// load web handler
-	userWeb := web.NewUserPage(cfg, sessionStore, userUsecase)
+	userWeb := web.NewUserPage(cfg, sessionStore, userUsecase, mailUsecase)
 
 	// init echo
 	e := echo.New()
@@ -116,6 +116,7 @@ func migrateDB(db *gorm.DB, enableGuestLogin bool) {
 	// migrate tables
 	log.Println("Start migrate db")
 	db.AutoMigrate(&entity.User{})
+	db.AutoMigrate(&entity.PasswordResetToken{})
 	db.AutoMigrate(&entity.Unit{})
 	db.AutoMigrate(&entity.Ingredient{})
 	db.AutoMigrate(&entity.IngredientConvertionUnit{})

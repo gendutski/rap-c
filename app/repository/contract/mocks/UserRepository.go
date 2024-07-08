@@ -49,6 +49,21 @@ func (mr *MockUserRepositoryMockRecorder) Create(ctx, user interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockUserRepository)(nil).Create), ctx, user)
 }
 
+// GenerateUserResetPassword mocks base method.
+func (m *MockUserRepository) GenerateUserResetPassword(ctx context.Context, email string) (*entity.PasswordResetToken, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GenerateUserResetPassword", ctx, email)
+	ret0, _ := ret[0].(*entity.PasswordResetToken)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GenerateUserResetPassword indicates an expected call of GenerateUserResetPassword.
+func (mr *MockUserRepositoryMockRecorder) GenerateUserResetPassword(ctx, email interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateUserResetPassword", reflect.TypeOf((*MockUserRepository)(nil).GenerateUserResetPassword), ctx, email)
+}
+
 // GetTotalUsersByRequest mocks base method.
 func (m *MockUserRepository) GetTotalUsersByRequest(ctx context.Context, req *entity.GetUserListRequest) (int64, error) {
 	m.ctrl.T.Helper()

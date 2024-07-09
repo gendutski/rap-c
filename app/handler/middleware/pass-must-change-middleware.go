@@ -25,8 +25,8 @@ func PasswordNotChanged(jwtUserContextKey string, isAPI bool) echo.MiddlewareFun
 				if isAPI {
 					return &echo.HTTPError{
 						Code:     http.StatusForbidden,
-						Message:  entity.PasswordMustBeChangedMessage,
-						Internal: entity.NewInternalError(entity.PasswordMustBeChanged, entity.PasswordMustBeChangedMessage),
+						Message:  entity.MiddlewarePasswordNotChangedSamePasswordMessage,
+						Internal: entity.NewInternalError(entity.MiddlewarePasswordNotChangedSamePassword, entity.MiddlewarePasswordNotChangedSamePasswordMessage),
 					}
 				} else {
 					return c.Redirect(http.StatusFound, entity.WebPasswordChangePath)

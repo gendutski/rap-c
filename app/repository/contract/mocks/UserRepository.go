@@ -80,18 +80,18 @@ func (mr *MockUserRepositoryMockRecorder) GetTotalUsersByRequest(ctx, req interf
 }
 
 // GetUserByField mocks base method.
-func (m *MockUserRepository) GetUserByField(ctx context.Context, fieldName string, fieldValue interface{}) (*entity.User, error) {
+func (m *MockUserRepository) GetUserByField(ctx context.Context, fieldName string, fieldValue interface{}, notFoundStatus int) (*entity.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserByField", ctx, fieldName, fieldValue)
+	ret := m.ctrl.Call(m, "GetUserByField", ctx, fieldName, fieldValue, notFoundStatus)
 	ret0, _ := ret[0].(*entity.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetUserByField indicates an expected call of GetUserByField.
-func (mr *MockUserRepositoryMockRecorder) GetUserByField(ctx, fieldName, fieldValue interface{}) *gomock.Call {
+func (mr *MockUserRepositoryMockRecorder) GetUserByField(ctx, fieldName, fieldValue, notFoundStatus interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByField", reflect.TypeOf((*MockUserRepository)(nil).GetUserByField), ctx, fieldName, fieldValue)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByField", reflect.TypeOf((*MockUserRepository)(nil).GetUserByField), ctx, fieldName, fieldValue, notFoundStatus)
 }
 
 // GetUsersByRequest mocks base method.

@@ -2,8 +2,6 @@ package userusecase
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"net/http"
 	"rap-c/app/entity"
 	"rap-c/app/helper"
@@ -15,7 +13,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
-	"gorm.io/gorm"
 )
 
 const (
@@ -41,15 +38,7 @@ func (uc *usecase) Create(ctx context.Context, payload *entity.CreateUserPayload
 		return nil, "", &echo.HTTPError{
 			Code:     http.StatusBadRequest,
 			Message:  errMessages,
-			Internal: entity.NewInternalError(entity.ValidateCreateUserFailed, errMessages...),
-		}
-	}
-	// validate author
-	if author == nil {
-		return nil, "", &echo.HTTPError{
-			Code:     http.StatusInternalServerError,
-			Message:  entity.CreateUserErrorEmptyAuthor,
-			Internal: entity.NewInternalError(entity.CreateUserError, entity.CreateUserErrorEmptyAuthor),
+			Internal: entity.NewInternalError(entity.ValidatorNotValid, errMessages...),
 		}
 	}
 
@@ -74,14 +63,7 @@ func (uc *usecase) Create(ctx context.Context, payload *entity.CreateUserPayload
 	// save
 	err = uc.userRepo.Create(ctx, &user)
 	if err != nil {
-		if echoError, ok := err.(*echo.HTTPError); ok {
-			return nil, "", echoError
-		}
-		return nil, "", &echo.HTTPError{
-			Code:     http.StatusInternalServerError,
-			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.CreateUserError, err.Error()),
-		}
+		return nil, "", err
 	}
 	return &user, pass, nil
 }
@@ -94,35 +76,22 @@ func (uc *usecase) AttemptLogin(ctx context.Context, payload *entity.AttemptLogi
 		return nil, &echo.HTTPError{
 			Code:     http.StatusBadRequest,
 			Message:  errMessages,
-			Internal: entity.NewInternalError(entity.ValidateAttemptLoginFailed, errMessages...),
+			Internal: entity.NewInternalError(entity.ValidatorNotValid, errMessages...),
 		}
 	}
 
 	// get user by email
-	user, err := uc.userRepo.GetUserByField(ctx, "email", payload.Email)
+	user, err := uc.userRepo.GetUserByField(ctx, "email", payload.Email, http.StatusBadRequest)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// user not found
-			return nil, &echo.HTTPError{
-				Code:     http.StatusBadRequest,
-				Message:  entity.AttemptLoginIncorrectMessage,
-				Internal: entity.NewInternalError(entity.ValidateAttemptLoginFailed, entity.AttemptLoginIncorrectMessage),
-			}
-		}
-		// internal database error
-		return nil, &echo.HTTPError{
-			Code:     http.StatusInternalServerError,
-			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.RepoGetUserByFieldError, err.Error()),
-		}
+		return nil, err
 	}
 
 	// check user status
 	if user.Disabled {
 		return nil, &echo.HTTPError{
 			Code:     http.StatusBadRequest,
-			Message:  entity.AttemptLoginDisabledMessage,
-			Internal: entity.NewInternalError(entity.AttemptLoginFailed, entity.AttemptLoginDisabledMessage),
+			Message:  entity.UserUsecaseAttemptLoginDisableUserMessage,
+			Internal: entity.NewInternalError(entity.UserUsecaseAttemptLoginDisableUser, entity.UserUsecaseAttemptLoginDisableUserMessage),
 		}
 	}
 
@@ -130,8 +99,8 @@ func (uc *usecase) AttemptLogin(ctx context.Context, payload *entity.AttemptLogi
 	if !helper.ValidateEncryptedPassword(user.Password, payload.Password) {
 		return nil, &echo.HTTPError{
 			Code:     http.StatusBadRequest,
-			Message:  entity.AttemptLoginIncorrectMessage,
-			Internal: entity.NewInternalError(entity.AttemptLoginFailed, entity.AttemptLoginIncorrectMessage),
+			Message:  entity.UserusecaseAttemptLoginIncorrectPasswordMessage,
+			Internal: entity.NewInternalError(entity.UserusecaseAttemptLogigIncorrectPassword, entity.UserusecaseAttemptLoginIncorrectPasswordMessage),
 		}
 	}
 
@@ -142,23 +111,19 @@ func (uc *usecase) AttemptGuestLogin(ctx context.Context) (*entity.User, error) 
 	if !uc.cfg.EnableGuestLogin {
 		return nil, &echo.HTTPError{
 			Code:     http.StatusForbidden,
-			Message:  entity.AttemptGuestLoginDisabledMessage,
-			Internal: entity.NewInternalError(entity.AttemptGuestLoginDisabled, entity.AttemptGuestLoginDisabledMessage),
+			Message:  entity.UserUsecaseAttemptGuestLoginDisabledMessage,
+			Internal: entity.NewInternalError(entity.UserUsecaseAttemptGuestLoginDisabled, entity.UserUsecaseAttemptGuestLoginDisabledMessage),
 		}
 	}
 	users, err := uc.userRepo.GetUsersByRequest(ctx, &entity.GetUserListRequest{GuestOnly: true, Page: 1})
 	if err != nil {
-		return nil, &echo.HTTPError{
-			Code:     http.StatusInternalServerError,
-			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.AttemptGuestLoginError, err.Error()),
-		}
+		return nil, err
 	}
 	if len(users) == 0 {
 		return nil, &echo.HTTPError{
 			Code:     http.StatusNotFound,
-			Message:  entity.AttemptGuestLoginNotFoundMessage,
-			Internal: entity.NewInternalError(entity.AttemptGuestLoginNotFound, entity.AttemptGuestLoginNotFoundMessage),
+			Message:  entity.UserUsecaseAttemptGuestLoginNotFoundMessage,
+			Internal: entity.NewInternalError(entity.UserUsecaseAttemptGuestLoginNotFound, entity.UserUsecaseAttemptGuestLoginNotFoundMessage),
 		}
 	}
 	return users[0], nil
@@ -180,7 +145,11 @@ func (uc *usecase) GenerateJwtToken(ctx context.Context, user *entity.User, isLo
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenStr, err := token.SignedString([]byte(uc.cfg.JwtSecret))
 	if err != nil {
-		return "", err
+		return "", &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.UserUsecaseGenerateJwtTokenError, err.Error()),
+		}
 	}
 	return tokenStr, nil
 }
@@ -189,7 +158,11 @@ func (uc *usecase) ValidateJwtToken(ctx context.Context, token *jwt.Token, guest
 	// get claims
 	claims, ok := token.Claims.(jwt.MapClaims) // by default claims is of type `jwt.MapClaims`
 	if !ok {
-		return nil, errors.New("failed to cast claims as jwt.MapClaims")
+		return nil, &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.UserUsecaseValidateJwtTokenError, "failed to cast claims as jwt.MapClaims"),
+		}
 	}
 	// get user from claims
 	return uc.getUserFromJwtClaims(ctx, claims, guestAccepted)
@@ -200,7 +173,12 @@ func (uc *usecase) ValidateSessionJwtToken(ctx context.Context, r *http.Request,
 	sess := entity.InitSession(r, w, store, entity.SessionID, uc.cfg.EnableWarnFileLog)
 	tokenStr, ok := sess.Get(entity.TokenSessionName).(string)
 	if !ok {
-		return nil, "", echo.NewHTTPError(http.StatusUnauthorized)
+		message := "token not found in session"
+		return nil, "", &echo.HTTPError{
+			Code:     http.StatusUnauthorized,
+			Message:  message,
+			Internal: entity.NewInternalError(entity.UserUsecaseValidateSessionJwtTokenUnauthorized, message),
+		}
 	}
 
 	// parse token
@@ -209,7 +187,11 @@ func (uc *usecase) ValidateSessionJwtToken(ctx context.Context, r *http.Request,
 		return []byte(uc.cfg.JwtSecret), nil
 	})
 	if err != nil || !token.Valid {
-		return nil, "", echo.NewHTTPError(http.StatusUnauthorized)
+		return nil, "", &echo.HTTPError{
+			Code:     http.StatusUnauthorized,
+			Message:  "parse token failed",
+			Internal: entity.NewInternalError(entity.UserUsecaseValidateSessionJwtTokenUnauthorized, err.Error()),
+		}
 	}
 
 	// get user from claims
@@ -228,7 +210,7 @@ func (uc *usecase) RenewPassword(ctx context.Context, user *entity.User, payload
 		return &echo.HTTPError{
 			Code:     http.StatusBadRequest,
 			Message:  errMessages,
-			Internal: entity.NewInternalError(entity.ValidateRenewPasswordFailed, errMessages...),
+			Internal: entity.NewInternalError(entity.ValidatorNotValid, errMessages...),
 		}
 	}
 
@@ -236,8 +218,8 @@ func (uc *usecase) RenewPassword(ctx context.Context, user *entity.User, payload
 	if helper.ValidateEncryptedPassword(user.Password, payload.Password) {
 		return &echo.HTTPError{
 			Code:     http.StatusBadRequest,
-			Message:  entity.RenewPasswordUnchangedMessage,
-			Internal: entity.NewInternalError(entity.RenewPasswordUnchanged, entity.RenewPasswordUnchangedMessage),
+			Message:  entity.UserUsecaseRenewPasswordUnchangedMessage,
+			Internal: entity.NewInternalError(entity.UserUsecaseRenewPasswordUnchanged, entity.UserUsecaseRenewPasswordUnchangedMessage),
 		}
 	}
 
@@ -251,19 +233,7 @@ func (uc *usecase) RenewPassword(ctx context.Context, user *entity.User, payload
 	user.UpdatedBy = user.Username
 
 	// save
-	err = uc.userRepo.Update(ctx, user)
-	if err != nil {
-		if echoError, ok := err.(*echo.HTTPError); ok {
-			return echoError
-		}
-		return &echo.HTTPError{
-			Code:     http.StatusInternalServerError,
-			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.RenewPasswordError, err.Error()),
-		}
-	}
-
-	return nil
+	return uc.userRepo.Update(ctx, user)
 }
 
 func (uc *usecase) GetUserList(ctx context.Context, req *entity.GetUserListRequest) ([]*entity.User, error) {
@@ -281,21 +251,9 @@ func (uc *usecase) GetTotalUserList(ctx context.Context, req *entity.GetUserList
 }
 
 func (uc *usecase) GetUserByUsername(ctx context.Context, username string) (*entity.User, error) {
-	user, err := uc.userRepo.GetUserByField(ctx, "username", username)
+	user, err := uc.userRepo.GetUserByField(ctx, "username", username, http.StatusNotFound)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			message := fmt.Sprintf(entity.UsernameNotFoundMessage, username)
-			return nil, &echo.HTTPError{
-				Code:     http.StatusNotFound,
-				Message:  message,
-				Internal: entity.NewInternalError(entity.UsernameNotFound, message),
-			}
-		}
-		return nil, &echo.HTTPError{
-			Code:     http.StatusInternalServerError,
-			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.RepoGetUserByFieldError, err.Error()),
-		}
+		return nil, err
 	}
 	return user, nil
 }
@@ -306,21 +264,9 @@ func (uc *usecase) RequestResetPassword(ctx context.Context, email string) (*ent
 	}
 
 	// check email
-	user, err := uc.userRepo.GetUserByField(ctx, "email", email)
+	user, err := uc.userRepo.GetUserByField(ctx, "email", email, http.StatusBadRequest)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			message := fmt.Sprintf(entity.EmailNotFoundMessage, email)
-			return nil, nil, &echo.HTTPError{
-				Code:     http.StatusNotFound,
-				Message:  message,
-				Internal: entity.NewInternalError(entity.EmailNotFound, message),
-			}
-		}
-		return nil, nil, &echo.HTTPError{
-			Code:     http.StatusInternalServerError,
-			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.RepoGetUserByFieldError, err.Error()),
-		}
+		return nil, nil, err
 	}
 
 	// generate reset password token
@@ -334,7 +280,19 @@ func (uc *usecase) RequestResetPassword(ctx context.Context, email string) (*ent
 
 func (uc *usecase) ValidateResetPassword(ctx context.Context, email string, token string) error {
 	if email == "" || token == "" {
-		return echo.NewHTTPError(http.StatusBadRequest)
+		var errMessages []string
+		if email == "" {
+			errMessages = append(errMessages, "email is required")
+		}
+		if token == "" {
+			errMessages = append(errMessages, "token is required")
+		}
+
+		return &echo.HTTPError{
+			Code:     http.StatusBadRequest,
+			Message:  errMessages,
+			Internal: entity.NewInternalError(entity.ValidatorNotValid, errMessages...),
+		}
 	}
 	return uc.userRepo.ValidateResetToken(ctx, email, token)
 }

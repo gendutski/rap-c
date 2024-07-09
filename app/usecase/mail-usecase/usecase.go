@@ -66,7 +66,7 @@ func (uc *usecase) Welcome(user *entity.User, password string) error {
 		return &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
 			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.GeneratingEmailHTMLError, err.Error()),
+			Internal: entity.NewInternalError(entity.MailUsecaseGeneratingEmailHTMLError, err.Error()),
 		}
 	}
 
@@ -76,7 +76,7 @@ func (uc *usecase) Welcome(user *entity.User, password string) error {
 		return &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
 			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.GeneratingEmailPlainTextError, err.Error()),
+			Internal: entity.NewInternalError(entity.MailUsecaseGeneratingEmailPlainTextError, err.Error()),
 		}
 	}
 
@@ -123,7 +123,7 @@ func (uc *usecase) ResetPassword(user *entity.User, token *entity.PasswordResetT
 		return &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
 			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.GeneratingEmailHTMLError, err.Error()),
+			Internal: entity.NewInternalError(entity.MailUsecaseGeneratingEmailHTMLError, err.Error()),
 		}
 	}
 
@@ -133,7 +133,7 @@ func (uc *usecase) ResetPassword(user *entity.User, token *entity.PasswordResetT
 		return &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
 			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.GeneratingEmailPlainTextError, err.Error()),
+			Internal: entity.NewInternalError(entity.MailUsecaseGeneratingEmailPlainTextError, err.Error()),
 		}
 	}
 

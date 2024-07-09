@@ -16,7 +16,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 func initUsecase(ctrl *gomock.Controller, cfg config.Config) (contract.UserUsecase, *repomocks.MockUserRepository) {
@@ -80,16 +79,6 @@ func Test_Create(t *testing.T) {
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
 	})
-
-	t.Run("empty author", func(t *testing.T) {
-		res, _, err := uc.Create(ctx, &entity.CreateUserPayload{
-			Username: "gendutski",
-			FullName: "Firman Darmawan",
-			Email:    "mvp.firman.darmawan@gmail.com",
-		}, nil)
-		assert.NotNil(t, err)
-		assert.Nil(t, res)
-	})
 }
 
 func Test_AttemptLogin(t *testing.T) {
@@ -112,7 +101,7 @@ func Test_AttemptLogin(t *testing.T) {
 			CreatedAt:          dt,
 			UpdatedAt:          dt,
 		}
-		userRepo.EXPECT().GetUserByField(ctx, "email", validUser.Email).Return(&validUser, nil).Times(1)
+		userRepo.EXPECT().GetUserByField(ctx, "email", validUser.Email, http.StatusBadRequest).Return(&validUser, nil).Times(1)
 
 		res, err := uc.AttemptLogin(ctx, &entity.AttemptLoginPayload{
 			Email:    "mvp.firman.darmawan@gmail.com",
@@ -134,7 +123,7 @@ func Test_AttemptLogin(t *testing.T) {
 			CreatedAt:          dt,
 			UpdatedAt:          dt,
 		}
-		userRepo.EXPECT().GetUserByField(ctx, "email", validUser.Email).Return(&validUser, nil).Times(1)
+		userRepo.EXPECT().GetUserByField(ctx, "email", validUser.Email, http.StatusBadRequest).Return(&validUser, nil).Times(1)
 
 		res, err := uc.AttemptLogin(ctx, &entity.AttemptLoginPayload{
 			Email:    "mvp.firman.darmawan@gmail.com",
@@ -155,7 +144,7 @@ func Test_AttemptLogin(t *testing.T) {
 			CreatedAt:          dt,
 			UpdatedAt:          dt,
 		}
-		userRepo.EXPECT().GetUserByField(ctx, "email", validUser.Email).Return(&validUser, nil).Times(1)
+		userRepo.EXPECT().GetUserByField(ctx, "email", validUser.Email, http.StatusBadRequest).Return(&validUser, nil).Times(1)
 
 		res, err := uc.AttemptLogin(ctx, &entity.AttemptLoginPayload{
 			Email:    "mvp.firman.darmawan@gmail.com",
@@ -166,7 +155,9 @@ func Test_AttemptLogin(t *testing.T) {
 	})
 
 	t.Run("failed, user not found", func(t *testing.T) {
-		userRepo.EXPECT().GetUserByField(ctx, "email", "mvp.firman.darmawan@gmail.com").Return(nil, gorm.ErrRecordNotFound).Times(1)
+		userRepo.EXPECT().GetUserByField(ctx, "email", "mvp.firman.darmawan@gmail.com", http.StatusBadRequest).Return(nil, &echo.HTTPError{
+			Code: http.StatusBadRequest,
+		}).Times(1)
 
 		res, err := uc.AttemptLogin(ctx, &entity.AttemptLoginPayload{
 			Email:    "mvp.firman.darmawan@gmail.com",

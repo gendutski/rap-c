@@ -47,7 +47,7 @@ func (h *BaseHandler) GetAuthor(e echo.Context) (*entity.User, error) {
 		return nil, &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
 			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.GetAuthorFromJwtError, "failed type assertion author"),
+			Internal: entity.NewInternalError(entity.BaseHandlerGetAuthorError, "failed type assertion author"),
 		}
 	}
 	return author, nil

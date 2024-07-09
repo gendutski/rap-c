@@ -4,61 +4,60 @@ import "strings"
 
 const (
 	// bad request
-	ValidateCreateUserFailed           int    = 40001
-	CreateUserEmailDuplicate           int    = 40002
-	CreateUserEmailDuplicateMessage    string = "duplicate email, email %s already exists"
-	CreateUserUsernameDuplicate        int    = 40003
-	CreateUserUsernameDuplicateMessage string = "duplicate username, username %s already exists"
-	ValidateAttemptLoginFailed         int    = 40004
-	AttemptLoginFailed                 int    = 40005
-	AttemptLoginIncorrectMessage       string = "incorrect email or password"
-	AttemptLoginDisabledMessage        string = "user is disabled"
-	ValidateRenewPasswordFailed        int    = 40006
-	RenewPasswordUnchanged             int    = 40007
-	RenewPasswordUnchangedMessage      string = "you cannot use old password for new password"
-	ValidateResetTokenNotValid         int    = 40008
-	ValidateResetTokenNotValidMessage  string = "token not valid"
-	MysqlDuplicateKeyError             int    = 40099
-	MysqlDuplicateKeyErrorMessage      string = "duplicate key error"
+	UserRepoCreateEmailDuplicate                    int    = 40001
+	UserRepoCreateEmailDuplicateMessage             string = "duplicate email, email %s already exists"
+	UserRepoCreateUsernameDuplicate                 int    = 40002
+	UserRepoCreateUsernameDuplicateMessage          string = "duplicate username, username %s already exists"
+	UserUsecaseAttemptLoginDisableUser              int    = 40003
+	UserUsecaseAttemptLoginDisableUserMessage       string = "user is disabled"
+	UserusecaseAttemptLogigIncorrectPassword        int    = 40004
+	UserusecaseAttemptLoginIncorrectPasswordMessage string = "incorrect password"
+	UserUsecaseRenewPasswordUnchanged               int    = 40005
+	UserUsecaseRenewPasswordUnchangedMessage        string = "you cannot use old password for new password"
+	ValidatorNotValid                               int    = 40098
+	MysqlDuplicateKeyError                          int    = 40099
+	MysqlDuplicateKeyErrorMessage                   string = "duplicate key error"
 
 	// unauthorized
-	ValidateTokenUserNotFound        int    = 40101
-	ValidateTokenUserNotFoundMessage string = "user not found"
-	ValidateTokenUserNotMatch        int    = 40102
-	ValidateTokenUserNotMatchMessage string = "user does not match with token"
+	UserUsecaseGetUserFromJwtClaimsUnauthorized        int    = 40101
+	UserUsecaseGetUserFromJwtClaimsUnauthorizedMessage string = "user does not match with token"
+	UserUsecaseValidateSessionJwtTokenUnauthorized     int    = 40102
 
 	// forbidden
-	ValidateTokenGuestNotAccepted        int    = 40301
-	ValidateTokenGuestNotAcceptedMessage string = "this page cannot accessed by guest"
-	PasswordMustBeChanged                int    = 40302
-	PasswordMustBeChangedMessage         string = "password must be changed"
-	AttemptGuestLoginDisabled            int    = 40303
-	AttemptGuestLoginDisabledMessage     string = "guest login disabled"
+	UserUsecaseAttemptGuestLoginDisabled              int    = 40301
+	UserUsecaseAttemptGuestLoginDisabledMessage       string = "guest login disabled"
+	UserUsecaseGetUserFromJwtClaimsForbidGuest        int    = 40302
+	UserUsecaseGetUserFromJwtClaimsForbidGuestMessage string = "this page cannot accessed by guest"
+	MiddlewarePasswordNotChangedSamePassword          int    = 40302
+	MiddlewarePasswordNotChangedSamePasswordMessage   string = "password must be changed, cannot use same password"
 
-	// not founc
-	UsernameNotFound                 int    = 40401
-	UsernameNotFoundMessage          string = "user `%s` not found"
-	AttemptGuestLoginNotFound        int    = 40402
-	AttemptGuestLoginNotFoundMessage string = "guest user not found"
-	EmailNotFound                    int    = 40403
-	EmailNotFoundMessage             string = "email `%s` not found"
+	// not found
+	UserRepoGetUserByFieldNotFound              int    = 40401
+	UserRepoGetUserByFieldNotFoundMessage       string = "user with the %s `%v` not found"
+	UserRepoValidateResetTokenNotFound          int    = 40402
+	UserRepoValidateResetTokenNotFoundMessage   string = "email `%s` and token `%s` not valid"
+	UserUsecaseAttemptGuestLoginNotFound        int    = 40403
+	UserUsecaseAttemptGuestLoginNotFoundMessage string = "guest user not found"
 
 	// internal error
-	CreateUserError                    int    = 50001
-	CreateUserErrorEmptyAuthor         string = "author is nil"
-	GeneratePasswordError              int    = 50002
-	ValidateTokenDBError               int    = 50003
-	RepoGetUserByFieldError            int    = 50003
-	GetAuthorFromJwtError              int    = 50004
-	GeneratingEmailHTMLError           int    = 50005
-	GeneratingEmailPlainTextError      int    = 50006
-	RenewPasswordError                 int    = 50007
-	AttemptGuestLoginError             int    = 50008
-	GenerateTokenError                 int    = 50009
-	RepoGenerateUserResetPasswordError int    = 50010
-	RepoValidateResetTokenError        int    = 50011
-	SessionError                       int    = 50099
-	SessionErrorMessage                string = "session error"
+	UserRepoCreateError                      int    = 50001
+	UserRepoUpdateError                      int    = 50002
+	UserRepoGetUserByFieldError              int    = 50003
+	UserRepoGetTotalUsersByRequestError      int    = 50004
+	UserRepoGetUsersByRequestError           int    = 50005
+	UserRepoGenerateUserResetPasswordError   int    = 50006
+	UserRepoValidateResetTokenError          int    = 50007
+	UserUsecaseCreateError                   int    = 50008
+	UserUsecaseGenerateStrongPasswordError   int    = 50009
+	UserUsecaseEncryptPasswordError          int    = 50010
+	UserUsecaseAttemptLoginError             int    = 50011
+	UserUsecaseGenerateJwtTokenError         int    = 50012
+	UserUsecaseValidateJwtTokenError         int    = 50013
+	BaseHandlerGetAuthorError                int    = 50014
+	MailUsecaseGeneratingEmailHTMLError      int    = 50015
+	MailUsecaseGeneratingEmailPlainTextError int    = 50016
+	SessionError                             int    = 50099
+	SessionErrorMessage                      string = "session error"
 )
 
 // for echo.HTTPError.Internal

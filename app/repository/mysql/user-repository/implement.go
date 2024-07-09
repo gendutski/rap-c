@@ -41,11 +41,11 @@ func (r *repo) Create(ctx context.Context, user *entity.User) error {
 			code := entity.MysqlDuplicateKeyError
 			message := entity.MysqlDuplicateKeyErrorMessage
 			if strings.Contains(err.Error(), emailUniqueKeyName) {
-				code = entity.CreateUserEmailDuplicate
-				message = fmt.Sprintf(entity.CreateUserEmailDuplicateMessage, user.Email)
+				code = entity.UserRepoCreateEmailDuplicate
+				message = fmt.Sprintf(entity.UserRepoCreateEmailDuplicateMessage, user.Email)
 			} else if strings.Contains(err.Error(), usernameUniqueKeyName) {
-				code = entity.CreateUserUsernameDuplicate
-				message = fmt.Sprintf(entity.CreateUserUsernameDuplicateMessage, user.Username)
+				code = entity.UserRepoCreateUsernameDuplicate
+				message = fmt.Sprintf(entity.UserRepoCreateUsernameDuplicateMessage, user.Username)
 			}
 
 			return &echo.HTTPError{
@@ -55,30 +55,61 @@ func (r *repo) Create(ctx context.Context, user *entity.User) error {
 			}
 		}
 	}
-	return err
+	return &echo.HTTPError{
+		Code:     http.StatusInternalServerError,
+		Message:  http.StatusText(http.StatusInternalServerError),
+		Internal: entity.NewInternalError(entity.UserRepoCreateError, err.Error()),
+	}
 }
 
 func (r *repo) Update(ctx context.Context, user *entity.User) error {
 	if user.ID == 0 {
-		return errors.New("data not found, empty primary key")
+		return &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.UserRepoUpdateError, "data not found, empty primary key"),
+		}
 	}
-	return r.db.Save(user).Error
+	err := r.db.Save(user).Error
+	if err != nil {
+		return &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.UserRepoUpdateError, err.Error()),
+		}
+	}
+	return nil
 }
 
-func (r *repo) GetUserByField(ctx context.Context, fieldName string, fieldValue interface{}) (*entity.User, error) {
+func (r *repo) GetUserByField(ctx context.Context, fieldName string, fieldValue interface{}, notFoundStatus int) (*entity.User, error) {
 	acceptedFields := map[string]bool{
 		"id":       true,
 		"username": true,
 		"email":    true,
 	}
 	if !acceptedFields[fieldName] {
-		return nil, errors.New("invalid field name for query")
+		return nil, &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.UserRepoGetUserByFieldError, "invalid field name for query"),
+		}
 	}
 
 	var result entity.User
 	err := r.db.Where(fmt.Sprintf("%s = ?", fieldName), fieldValue).First(&result).Error
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, &echo.HTTPError{
+				Code:     notFoundStatus,
+				Message:  fmt.Sprintf(entity.UserRepoGetUserByFieldNotFoundMessage, fieldName, fieldValue),
+				Internal: entity.NewInternalError(entity.UserRepoGetUserByFieldNotFound, err.Error()),
+			}
+		}
+		return nil, &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.UserRepoGetUserByFieldError, err.Error()),
+		}
 	}
 	return &result, nil
 }
@@ -88,7 +119,11 @@ func (r *repo) GetTotalUsersByRequest(ctx context.Context, req *entity.GetUserLi
 	qry := r.renderUsersQuery(req)
 	err := qry.Model(entity.User{}).Count(&result).Error
 	if err != nil {
-		return 0, err
+		return 0, &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.UserRepoGetTotalUsersByRequestError, err.Error()),
+		}
 	}
 	return result, nil
 }
@@ -126,18 +161,30 @@ func (r *repo) GetUsersByRequest(ctx context.Context, req *entity.GetUserListReq
 		Find(&result).
 		Error
 	if err != nil {
-		return nil, err
+		return nil, &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.UserRepoGetUsersByRequestError, err.Error()),
+		}
 	}
 	return result, nil
 }
 
 func (r *repo) GenerateUserResetPassword(ctx context.Context, email string) (*entity.PasswordResetToken, error) {
+	if email == "" {
+		return nil, &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.UserRepoGenerateUserResetPasswordError, "email must not empty"),
+		}
+	}
+
 	token, err := helper.GenerateToken(64)
 	if err != nil {
 		return nil, &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
 			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.GenerateTokenError, err.Error()),
+			Internal: entity.NewInternalError(entity.UserRepoGenerateUserResetPasswordError, err.Error()),
 		}
 	}
 
@@ -155,36 +202,46 @@ func (r *repo) GenerateUserResetPassword(ctx context.Context, email string) (*en
 		return nil, &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
 			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.RepoGenerateUserResetPasswordError, err.Error()),
+			Internal: entity.NewInternalError(entity.UserRepoGenerateUserResetPasswordError, err.Error()),
 		}
 	}
 	return &result, nil
 }
 
 func (r *repo) ValidateResetToken(ctx context.Context, email string, token string) error {
+	if email == "" || token == "" {
+		return &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.UserRepoValidateResetTokenError, "email or token must not empty"),
+		}
+	}
+
 	var result entity.PasswordResetToken
 	// get token from db
 	err := r.db.Where("email = ?", email).First(&result).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			message := fmt.Sprintf(entity.UserRepoValidateResetTokenNotFoundMessage, email, token)
 			return &echo.HTTPError{
 				Code:     http.StatusNotFound,
-				Message:  entity.ValidateResetTokenNotValidMessage,
-				Internal: entity.NewInternalError(entity.ValidateResetTokenNotValid, entity.ValidateResetTokenNotValidMessage),
+				Message:  message,
+				Internal: entity.NewInternalError(entity.UserRepoValidateResetTokenNotFound, message),
 			}
 		}
 		return &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
 			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.RepoValidateResetTokenError, err.Error()),
+			Internal: entity.NewInternalError(entity.UserRepoValidateResetTokenError, err.Error()),
 		}
 	}
 	// validate token & expired date
 	if result.Token != token || time.Now().After(result.UpdatedAt.Add(resetTokenExpiration)) {
+		message := fmt.Sprintf(entity.UserRepoValidateResetTokenNotFoundMessage, email, token)
 		return &echo.HTTPError{
 			Code:     http.StatusNotFound,
-			Message:  entity.ValidateResetTokenNotValidMessage,
-			Internal: entity.NewInternalError(entity.ValidateResetTokenNotValid, entity.ValidateResetTokenNotValidMessage),
+			Message:  message,
+			Internal: entity.NewInternalError(entity.UserRepoValidateResetTokenNotFound, message),
 		}
 	}
 	return nil

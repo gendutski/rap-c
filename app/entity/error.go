@@ -56,6 +56,7 @@ const (
 	BaseHandlerGetAuthorError                int    = 50014
 	MailUsecaseGeneratingEmailHTMLError      int    = 50015
 	MailUsecaseGeneratingEmailPlainTextError int    = 50016
+	UserRepoResetPasswordError               int    = 50017
 	SessionError                             int    = 50099
 	SessionErrorMessage                      string = "session error"
 )

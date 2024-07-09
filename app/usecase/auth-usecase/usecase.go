@@ -234,5 +234,54 @@ func (uc *usecase) ValidateResetPassword(ctx context.Context, email string, toke
 			Internal: entity.NewInternalError(entity.ValidatorNotValid, errMessages...),
 		}
 	}
-	return uc.userRepo.ValidateResetToken(ctx, email, token)
+	_, err := uc.userRepo.ValidateResetToken(ctx, email, token)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (uc *usecase) SubmitResetPassword(ctx context.Context, payload *entity.ResetPasswordPayload) (*entity.User, error) {
+	// validate payload
+	validate := helper.GenerateStructValidator()
+	errMessages := payload.Validate(validate)
+	if len(errMessages) > 0 {
+		return nil, &echo.HTTPError{
+			Code:     http.StatusBadRequest,
+			Message:  errMessages,
+			Internal: entity.NewInternalError(entity.ValidatorNotValid, errMessages...),
+		}
+	}
+
+	// get reset pasword data
+	reset, err := uc.userRepo.ValidateResetToken(ctx, payload.Email, payload.Token)
+	if err != nil {
+		return nil, err
+	}
+
+	// get user
+	user, err := uc.userRepo.GetUserByField(ctx, "email", payload.Email, http.StatusNotFound)
+	if err != nil {
+		return nil, err
+	}
+
+	// encrypt password
+	_, encryptPass, err := uc.generateUserPassword(payload.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	// update user
+	user.Password = encryptPass
+	user.UpdatedBy = user.Username
+
+	// update reset token
+	reset.Token = ""
+
+	// save
+	err = uc.userRepo.ResetPassword(ctx, user, reset)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }

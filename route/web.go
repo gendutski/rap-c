@@ -67,7 +67,7 @@ func (h *WebHandler) setAuthWebPage(e *echo.Echo) {
 	e.GET("/request-reset", h.AuthPage.RequestResetPassword).Name = entity.RequestResetPasswordName
 	e.POST("/request-reset", h.AuthPage.SubmitRequestResetPassword).Name = entity.PostRequestResetPasswordName
 	e.GET(entity.WebResetPasswordPath, h.AuthPage.ResetPassword).Name = entity.ResetPasswordName
-	e.POST(entity.WebResetPasswordPath, echo.NotFoundHandler).Name = entity.SubmitResetPasswordName
+	e.POST(entity.WebResetPasswordPath, h.AuthPage.SubmitResetPassword).Name = entity.SubmitResetPasswordName
 
 	// password must change
 	e.GET(entity.WebPasswordChangePath, h.AuthPage.PasswordChanger, middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.AuthUsecase, h.GuestAccepted))

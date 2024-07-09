@@ -208,9 +208,9 @@ func (r *repo) GenerateUserResetPassword(ctx context.Context, email string) (*en
 	return &result, nil
 }
 
-func (r *repo) ValidateResetToken(ctx context.Context, email string, token string) error {
+func (r *repo) ValidateResetToken(ctx context.Context, email string, token string) (*entity.PasswordResetToken, error) {
 	if email == "" || token == "" {
-		return &echo.HTTPError{
+		return nil, &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
 			Message:  http.StatusText(http.StatusInternalServerError),
 			Internal: entity.NewInternalError(entity.UserRepoValidateResetTokenError, "email or token must not empty"),
@@ -223,13 +223,13 @@ func (r *repo) ValidateResetToken(ctx context.Context, email string, token strin
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			message := fmt.Sprintf(entity.UserRepoValidateResetTokenNotFoundMessage, email, token)
-			return &echo.HTTPError{
+			return nil, &echo.HTTPError{
 				Code:     http.StatusNotFound,
 				Message:  message,
 				Internal: entity.NewInternalError(entity.UserRepoValidateResetTokenNotFound, message),
 			}
 		}
-		return &echo.HTTPError{
+		return nil, &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
 			Message:  http.StatusText(http.StatusInternalServerError),
 			Internal: entity.NewInternalError(entity.UserRepoValidateResetTokenError, err.Error()),
@@ -238,13 +238,69 @@ func (r *repo) ValidateResetToken(ctx context.Context, email string, token strin
 	// validate token & expired date
 	if result.Token != token || time.Now().After(result.UpdatedAt.Add(resetTokenExpiration)) {
 		message := fmt.Sprintf(entity.UserRepoValidateResetTokenNotFoundMessage, email, token)
-		return &echo.HTTPError{
+		return nil, &echo.HTTPError{
 			Code:     http.StatusNotFound,
 			Message:  message,
 			Internal: entity.NewInternalError(entity.UserRepoValidateResetTokenNotFound, message),
 		}
 	}
-	return nil
+	return &result, nil
+}
+
+func (r *repo) ResetPassword(ctx context.Context, user *entity.User, reset *entity.PasswordResetToken) (err error) {
+	tx := r.db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			err = &echo.HTTPError{
+				Code:     http.StatusInternalServerError,
+				Message:  http.StatusText(http.StatusInternalServerError),
+				Internal: entity.NewInternalError(entity.UserRepoResetPasswordError, fmt.Sprint(r)),
+			}
+			tx.Rollback()
+		}
+	}()
+	if err = tx.Error; err != nil {
+		err = &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.UserRepoResetPasswordError, err.Error()),
+		}
+		return
+	}
+
+	// save user
+	err = tx.Save(user).Error
+	if err != nil {
+		tx.Rollback()
+		err = &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.UserRepoResetPasswordError, err.Error()),
+		}
+		return
+	}
+
+	// save reset password
+	err = tx.Save(reset).Error
+	if err != nil {
+		tx.Rollback()
+		err = &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.UserRepoResetPasswordError, err.Error()),
+		}
+		return
+	}
+
+	err = tx.Commit().Error
+	if err != nil {
+		err = &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.UserRepoResetPasswordError, err.Error()),
+		}
+	}
+	return
 }
 
 func (r *repo) renderUsersQuery(req *entity.GetUserListRequest) *gorm.DB {

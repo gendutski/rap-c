@@ -2,8 +2,8 @@ package web
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
+	"net/url"
 	"rap-c/app/entity"
 	"rap-c/app/handler"
 	"rap-c/app/helper"
@@ -37,6 +37,8 @@ type AuthPage interface {
 	SubmitRequestResetPassword(e echo.Context) error
 	// reset password page
 	ResetPassword(e echo.Context) error
+	// submit reset password page
+	SubmitResetPassword(e echo.Context) error
 }
 
 func NewAuthPage(cfg config.Config, store sessions.Store, authUsecase contract.AuthUsecase, mailUsecase contract.MailUsecase) AuthPage {
@@ -343,7 +345,6 @@ func (h *authHandler) ResetPassword(e echo.Context) error {
 	ctx := e.Request().Context()
 	email := e.QueryParam("email")
 	token := e.QueryParam("token")
-	log.Println("FUCK")
 
 	err := h.authUsecase.ValidateResetPassword(ctx, email, token)
 	if err != nil {
@@ -353,10 +354,79 @@ func (h *authHandler) ResetPassword(e echo.Context) error {
 	// map route
 	routeMap := helper.RouteMap(e.Echo().Routes())
 
+	// load session
+	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.EnableWarnFileLog)
+
+	// get submit login error
+	var submitErr []string
+	var submitError []byte = []byte("[]")
+	if _submitErr := sess.Flash("error"); _submitErr != nil {
+		switch _val := _submitErr.(type) {
+		case []string:
+			submitErr = append(submitErr, _val...)
+		case string:
+			submitErr = append(submitErr, _val)
+		}
+	}
+	if len(submitErr) > 0 {
+		submitError, _ = json.Marshal(submitErr)
+	}
+
 	return e.Render(http.StatusOK, "reset-password.html", map[string]interface{}{
 		"email":          email,
 		"token":          token,
+		"submitError":    string(submitError),
 		"passwordMethod": routeMap.Get(entity.SubmitResetPasswordName, "method"),
 		"passwordAction": routeMap.Get(entity.SubmitResetPasswordName, "path"),
 	})
+}
+
+func (h *authHandler) SubmitResetPassword(e echo.Context) error {
+	// get payload
+	payload := new(entity.ResetPasswordPayload)
+	err := e.Bind(payload)
+	if err != nil {
+		return err
+	}
+
+	// init session
+	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.EnableWarnFileLog)
+
+	// map route
+	routeMap := helper.RouteMap(e.Echo().Routes())
+	backRedirect := routeMap.Get(entity.ResetPasswordName, "path")
+	authorizedPathRedirect := routeMap.Get(entity.DefaultAuthorizedRouteRedirect, "path")
+
+	// return error handler
+	handleError := func(err error) error {
+		if herr, ok := err.(*echo.HTTPError); ok {
+			params := url.Values{}
+			params.Add("email", payload.Email)
+			params.Add("token", payload.Token)
+
+			sess.Set("error", herr.Message)
+			return e.Redirect(http.StatusFound, backRedirect+"?"+params.Encode())
+		}
+		return err
+	}
+
+	ctx := e.Request().Context()
+
+	// reset password
+	user, err := h.authUsecase.SubmitResetPassword(ctx, payload)
+	if err != nil {
+		return handleError(err)
+	}
+
+	// generate token
+	token, err := h.authUsecase.GenerateJwtToken(ctx, user, false)
+	if err != nil {
+		return handleError(err)
+	}
+
+	// init token session
+	tokenSess := entity.InitSession(e.Request(), e.Response(), h.store, entity.SessionID, h.cfg.EnableWarnFileLog)
+	tokenSess.Set(entity.TokenSessionName, token)
+
+	return e.Redirect(http.StatusFound, authorizedPathRedirect)
 }

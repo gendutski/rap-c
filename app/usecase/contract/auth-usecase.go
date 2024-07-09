@@ -24,6 +24,8 @@ type AuthUsecase interface {
 	RenewPassword(ctx context.Context, user *entity.User, payload *entity.RenewPasswordPayload) error
 	// submit reset password request
 	RequestResetPassword(ctx context.Context, email string) (*entity.User, *entity.PasswordResetToken, error)
-	// subit reset password
+	// validate reset password from email
 	ValidateResetPassword(ctx context.Context, email string, token string) error
+	// submit reset password
+	SubmitResetPassword(ctx context.Context, payload *entity.ResetPasswordPayload) (*entity.User, error)
 }

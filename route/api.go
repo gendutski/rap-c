@@ -19,7 +19,8 @@ type APIHandler struct {
 	JwtUserContextKey string
 	JwtSecret         string
 	GuestAccepted     bool
-	UserUsecase       contract.UserUsecase
+	AuthUsecase       contract.AuthUsecase
+	AuthAPI           api.AuthAPI
 	UserAPI           api.UserAPI
 }
 
@@ -27,25 +28,30 @@ func SetAPIRoute(e *echo.Echo, h *APIHandler) {
 	// api group
 	apiGroup := e.Group(ApiGroup)
 
-	// non login routes
-	apiGroup.POST("/login", h.UserAPI.Login)
-
 	// all login user group
 	allLoginRole := []echo.MiddlewareFunc{
 		middleware.GetJWT([]byte(h.JwtSecret)),
-		middleware.GetUserFromJWT(h.JwtUserContextKey, h.UserUsecase, h.GuestAccepted),
+		middleware.GetUserFromJWT(h.JwtUserContextKey, h.AuthUsecase, h.GuestAccepted),
 		middleware.PasswordNotChanged(h.JwtUserContextKey, true),
 	}
 
 	// non guest only group
 	nonGuestOnly := []echo.MiddlewareFunc{
 		middleware.GetJWT([]byte(h.JwtSecret)),
-		middleware.GetUserFromJWT(h.JwtUserContextKey, h.UserUsecase, false),
+		middleware.GetUserFromJWT(h.JwtUserContextKey, h.AuthUsecase, false),
 		middleware.PasswordNotChanged(h.JwtUserContextKey, true),
 	}
 
-	// user api
+	// set api
+	h.setAuthAPI(apiGroup, nonGuestOnly)
 	h.setUserAPI(apiGroup, allLoginRole, nonGuestOnly)
+}
+
+func (h *APIHandler) setAuthAPI(apiGroup *echo.Group, nonGuestOnly []echo.MiddlewareFunc) {
+	// non login routes
+	apiGroup.POST("/login", h.AuthAPI.Login)
+	// renew password routes
+	apiGroup.PUT("/user/renew-password", h.AuthAPI.RenewPassword, nonGuestOnly[:2]...)
 }
 
 func (h *APIHandler) setUserAPI(apiGroup *echo.Group, allLoginRole []echo.MiddlewareFunc, nonGuestOnly []echo.MiddlewareFunc) {
@@ -58,9 +64,6 @@ func (h *APIHandler) setUserAPI(apiGroup *echo.Group, allLoginRole []echo.Middle
 	apiGroup.POST("/user/create", h.UserAPI.Create, nonGuestOnly...)
 	apiGroup.PUT("/user/update", echo.NotFoundHandler, nonGuestOnly...)
 	apiGroup.PUT("/user/active-status", echo.NotFoundHandler, nonGuestOnly...)
-
-	// renew password routes
-	apiGroup.PUT("/user/renew-password", h.UserAPI.RenewPassword, nonGuestOnly[:2]...)
 }
 
 // error handler

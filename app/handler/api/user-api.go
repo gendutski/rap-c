@@ -14,10 +14,6 @@ import (
 type UserAPI interface {
 	// create user
 	Create(e echo.Context) error
-	// post login
-	Login(e echo.Context) error
-	// renew password
-	RenewPassword(e echo.Context) error
 	// get user list
 	GetUserList(e echo.Context) error
 	// get total user list
@@ -86,52 +82,6 @@ func (h *userHandler) Create(e echo.Context) error {
 	}()
 
 	return e.JSON(http.StatusOK, user)
-}
-
-func (h *userHandler) Login(e echo.Context) error {
-	payload := new(entity.AttemptLoginPayload)
-	err := e.Bind(payload)
-	if err != nil {
-		return err
-	}
-	ctx := e.Request().Context()
-
-	user, err := h.userUsecase.AttemptLogin(ctx, payload)
-	if err != nil {
-		return err
-	}
-
-	token, err := h.userUsecase.GenerateJwtToken(ctx, user, payload.RememberMe)
-	if err != nil {
-		return err
-	}
-
-	return e.JSON(http.StatusOK, map[string]interface{}{
-		"token": token,
-		"user":  user,
-	})
-}
-
-func (h *userHandler) RenewPassword(e echo.Context) error {
-	payload := new(entity.RenewPasswordPayload)
-	err := e.Bind(payload)
-	if err != nil {
-		return err
-	}
-	ctx := e.Request().Context()
-
-	// get author
-	author, err := h.BaseHandler.GetAuthor(e)
-	if err != nil {
-		return err
-	}
-
-	err = h.userUsecase.RenewPassword(ctx, author, payload)
-	if err != nil {
-		return err
-	}
-
-	return e.JSON(http.StatusOK, map[string]interface{}{"status": "ok"})
 }
 
 func (h *userHandler) GetUserList(e echo.Context) error {

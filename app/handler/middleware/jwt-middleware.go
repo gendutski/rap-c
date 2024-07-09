@@ -20,7 +20,7 @@ func GetJWT(jwtSecret []byte) echo.MiddlewareFunc {
 	})
 }
 
-func GetUserFromJWT(jwtUserContextKey string, userUsecase contract.UserUsecase, guestAccepted bool) echo.MiddlewareFunc {
+func GetUserFromJWT(jwtUserContextKey string, authUsecase contract.AuthUsecase, guestAccepted bool) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		// validate token with user db middleware
 		return func(c echo.Context) error {
@@ -30,7 +30,7 @@ func GetUserFromJWT(jwtUserContextKey string, userUsecase contract.UserUsecase, 
 			}
 
 			ctx := c.Request().Context()
-			user, err := userUsecase.ValidateJwtToken(ctx, token, guestAccepted)
+			user, err := authUsecase.ValidateJwtToken(ctx, token, guestAccepted)
 			if err != nil {
 				return err
 			}

@@ -24,9 +24,10 @@ type WebHandler struct {
 	JwtUserContextKey string
 	JwtSecret         string
 	GuestAccepted     bool
-	UserUsecase       contract.UserUsecase
-	UserPage          web.UserPage
+	AuthUsecase       contract.AuthUsecase
 	Store             sessions.Store
+	AuthPage          web.AuthPage
+	UserPage          web.UserPage
 }
 
 func SetWebRoute(e *echo.Echo, h *WebHandler) {
@@ -38,36 +39,40 @@ func SetWebRoute(e *echo.Echo, h *WebHandler) {
 	e.Static("/assets", filepath.Join(storagePath, assetPath))
 	e.File("/favicon.ico", filepath.Join(storagePath, assetPath, imagePath, favIcon))
 
-	// login page
-	e.GET(entity.WebLoginPath, h.UserPage.Login).Name = entity.LoginRouteName
-	e.POST("/guest-login", h.UserPage.GuestLogin).Name = entity.GuestLoginRouteName
-	e.POST("/submit-login", h.UserPage.PostLogin).Name = entity.PostLoginRouteName
-	e.POST(entity.WebLogoutPath, h.UserPage.PostLogout).Name = entity.PostLogoutRouteName
-
-	// reset password
-	e.GET("/request-reset", h.UserPage.RequestResetPassword).Name = entity.RequestResetPasswordName
-	e.POST("/request-reset", h.UserPage.SubmitRequestResetPassword).Name = entity.PostRequestResetPasswordName
-	e.GET(entity.WebResetPasswordPath, h.UserPage.ResetPassword).Name = entity.ResetPasswordName
-	e.POST(entity.WebResetPasswordPath, echo.NotFoundHandler).Name = entity.SubmitResetPasswordName
-
-	// password must change
-	e.GET(entity.WebPasswordChangePath, h.UserPage.PasswordChanger, middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserUsecase, h.GuestAccepted))
-	e.POST(entity.WebPasswordChangePath, h.UserPage.SubmitPasswordChanger, middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserUsecase, h.GuestAccepted)).Name = entity.RenewPasswordRouteName
-
 	// all login user group
 	allLoginRole := []echo.MiddlewareFunc{
-		middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserUsecase, h.GuestAccepted),
+		middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.AuthUsecase, h.GuestAccepted),
 		middleware.PasswordNotChanged(h.JwtUserContextKey, false),
 	}
 
 	// non guest only group
 	nonGuestOnly := []echo.MiddlewareFunc{
-		middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.UserUsecase, false),
+		middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.AuthUsecase, false),
 		middleware.PasswordNotChanged(h.JwtUserContextKey, false),
 	}
 
 	// user api
+	h.setAuthWebPage(e)
 	h.setUserWebPage(e, allLoginRole, nonGuestOnly)
+}
+
+func (h *WebHandler) setAuthWebPage(e *echo.Echo) {
+	// login page
+	e.GET(entity.WebLoginPath, h.AuthPage.Login).Name = entity.LoginRouteName
+	e.POST("/guest-login", h.AuthPage.GuestLogin).Name = entity.GuestLoginRouteName
+	e.POST("/submit-login", h.AuthPage.PostLogin).Name = entity.PostLoginRouteName
+	e.POST(entity.WebLogoutPath, h.AuthPage.PostLogout).Name = entity.PostLogoutRouteName
+
+	// reset password
+	e.GET("/request-reset", h.AuthPage.RequestResetPassword).Name = entity.RequestResetPasswordName
+	e.POST("/request-reset", h.AuthPage.SubmitRequestResetPassword).Name = entity.PostRequestResetPasswordName
+	e.GET(entity.WebResetPasswordPath, h.AuthPage.ResetPassword).Name = entity.ResetPasswordName
+	e.POST(entity.WebResetPasswordPath, echo.NotFoundHandler).Name = entity.SubmitResetPasswordName
+
+	// password must change
+	e.GET(entity.WebPasswordChangePath, h.AuthPage.PasswordChanger, middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.AuthUsecase, h.GuestAccepted))
+	e.POST(entity.WebPasswordChangePath, h.AuthPage.SubmitPasswordChanger, middleware.ValidateJwtTokenFromSession(h.Store, h.JwtUserContextKey, h.AuthUsecase, h.GuestAccepted)).Name = entity.RenewPasswordRouteName
+
 }
 
 func (h *WebHandler) setUserWebPage(e *echo.Echo, allLoginRole []echo.MiddlewareFunc, nonGuestOnly []echo.MiddlewareFunc) {

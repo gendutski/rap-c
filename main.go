@@ -11,6 +11,7 @@ import (
 	"rap-c/app/handler/web"
 	"rap-c/app/helper"
 	userrepository "rap-c/app/repository/mysql/user-repository"
+	authusecase "rap-c/app/usecase/auth-usecase"
 	mailusecase "rap-c/app/usecase/mail-usecase"
 	userusecase "rap-c/app/usecase/user-usecase"
 	"rap-c/config"
@@ -48,16 +49,19 @@ func serve() {
 	userRepo := userrepository.New(db)
 
 	// load modules
+	authUsecase := authusecase.NewUsecase(cfg, userRepo)
 	userUsecase := userusecase.NewUsecase(cfg, userRepo)
 	mailUsecase := mailusecase.NewUsecase(cfg)
 
 	// load api handler
+	authAPI := api.NewAuthHandler(cfg, authUsecase, mailUsecase)
 	userAPI := api.NewUserHandler(cfg, userUsecase, mailUsecase)
 
 	// load session store
 	sessionStore := sessions.NewCookieStore([]byte(cfg.SessionKey))
 
 	// load web handler
+	authWeb := web.NewAuthPage(cfg, sessionStore, authUsecase, mailUsecase)
 	userWeb := web.NewUserPage(cfg, sessionStore, userUsecase, mailUsecase)
 
 	// init echo
@@ -86,7 +90,8 @@ func serve() {
 		JwtUserContextKey: cfg.JwtUserContextKey,
 		JwtSecret:         cfg.JwtSecret,
 		GuestAccepted:     cfg.EnableGuestLogin,
-		UserUsecase:       userUsecase,
+		AuthUsecase:       authUsecase,
+		AuthAPI:           authAPI,
 		UserAPI:           userAPI,
 	})
 	// set web page route
@@ -94,9 +99,10 @@ func serve() {
 		JwtUserContextKey: cfg.JwtUserContextKey,
 		JwtSecret:         cfg.JwtSecret,
 		GuestAccepted:     cfg.EnableGuestLogin,
-		UserUsecase:       userUsecase,
-		UserPage:          userWeb,
+		AuthUsecase:       authUsecase,
 		Store:             sessionStore,
+		UserPage:          userWeb,
+		AuthPage:          authWeb,
 	})
 
 	// set template renderer

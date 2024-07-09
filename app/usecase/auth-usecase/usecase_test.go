@@ -111,6 +111,52 @@ func Test_AttemptLogin(t *testing.T) {
 	})
 }
 
+func Test_AttemptGuestLogin(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	ctx := context.Background()
+
+	t.Run("success", func(t *testing.T) {
+		uc, userRepo := initUsecase(ctrl, config.Config{EnableGuestLogin: true})
+
+		validUsers := []*entity.User{{
+			ID:       2,
+			Username: "Guest",
+			IsGuest:  true,
+		}}
+		userRepo.EXPECT().GetUsersByRequest(ctx, &entity.GetUserListRequest{GuestOnly: true, Page: 1}).
+			Return(validUsers, nil).Times(1)
+
+		res, err := uc.AttemptGuestLogin(ctx)
+		assert.Nil(t, err)
+		assert.Equal(t, validUsers[0], res)
+	})
+
+	t.Run("no guest users", func(t *testing.T) {
+		uc, userRepo := initUsecase(ctrl, config.Config{EnableGuestLogin: true})
+
+		userRepo.EXPECT().GetUsersByRequest(ctx, &entity.GetUserListRequest{GuestOnly: true, Page: 1}).
+			Return(nil, nil).Times(1)
+
+		res, err := uc.AttemptGuestLogin(ctx)
+		assert.Nil(t, res)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusNotFound, herr.Code)
+	})
+
+	t.Run("disable guest", func(t *testing.T) {
+		uc, _ := initUsecase(ctrl, config.Config{EnableGuestLogin: false})
+
+		_, err := uc.AttemptGuestLogin(ctx)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusForbidden, herr.Code)
+	})
+
+}
+
 func Test_GenerateJwtToken(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	cfg := config.Config{
@@ -161,6 +207,80 @@ func Test_GenerateJwtToken(t *testing.T) {
 		assert.Equal(t, "gendutski", claims["userName"])
 		assert.Equal(t, "mvp.firman.darmawan@gmail.com", claims["email"])
 		assert.Equal(t, exp.Format("2006-01-02"), time.Unix(int64(claims["exp"].(float64)), 0).Format("2006-01-02"))
+	})
+}
+
+func Test_ValidateJwtToken(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	uc, userRepo := initUsecase(ctrl, config.Config{})
+	ctx := context.Background()
+
+	validUser := &entity.User{
+		ID:       1,
+		Username: "gendutski",
+		Email:    "gendutski@gmail.com",
+	}
+	validGuest := &entity.User{
+		ID:       2,
+		Username: "guest",
+		Email:    "guest@gmail.com",
+		IsGuest:  true,
+	}
+
+	t.Run("success guest", func(t *testing.T) {
+		userRepo.EXPECT().GetUserByField(ctx, "id", 2, http.StatusUnauthorized).Return(validGuest, nil).Times(1)
+
+		res, err := uc.ValidateJwtToken(ctx, jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"id":       2,
+			"userName": "guest",
+			"email":    "guest@gmail.com",
+			"exp":      time.Now().Add(time.Hour).Unix(),
+		}), true)
+		assert.Nil(t, err)
+		assert.Equal(t, validGuest, res)
+	})
+
+	t.Run("success non guest", func(t *testing.T) {
+		userRepo.EXPECT().GetUserByField(ctx, "id", 1, http.StatusUnauthorized).Return(validUser, nil).Times(1)
+
+		res, err := uc.ValidateJwtToken(ctx, jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"id":       1,
+			"userName": "gendutski",
+			"email":    "gendutski@gmail.com",
+			"exp":      time.Now().Add(time.Hour).Unix(),
+		}), true)
+		assert.Nil(t, err)
+		assert.Equal(t, validUser, res)
+	})
+
+	t.Run("token not match", func(t *testing.T) {
+		userRepo.EXPECT().GetUserByField(ctx, "id", 1, http.StatusUnauthorized).Return(validUser, nil).Times(1)
+
+		_, err := uc.ValidateJwtToken(ctx, jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"id":       1,
+			"userName": "guest",
+			"email":    "guest@gmail.com",
+			"exp":      time.Now().Add(time.Hour).Unix(),
+		}), true)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusUnauthorized, herr.Code)
+	})
+
+	t.Run("guest forbid", func(t *testing.T) {
+		userRepo.EXPECT().GetUserByField(ctx, "id", 2, http.StatusUnauthorized).Return(validGuest, nil).Times(1)
+
+		_, err := uc.ValidateJwtToken(ctx, jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"id":       2,
+			"userName": "guest",
+			"email":    "guest@gmail.com",
+			"exp":      time.Now().Add(time.Hour).Unix(),
+		}), false)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusForbidden, herr.Code)
 	})
 }
 

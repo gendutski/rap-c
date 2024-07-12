@@ -66,6 +66,7 @@ func (h *userHandler) Create(e echo.Context) error {
 			fmt.Sprintf("Send welcome email to %s", user.Email),
 			http.StatusOK,
 			nil,
+			h.cfg.LogMode,
 			false,
 		).Log()
 		err = h.mailUsecase.Welcome(user, password)
@@ -76,6 +77,7 @@ func (h *userHandler) Create(e echo.Context) error {
 				"send welcome mail",
 				http.StatusOK,
 				err,
+				h.cfg.LogMode,
 				h.cfg.EnableWarnFileLog,
 			).Log()
 		}

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"rap-c/config"
 
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
@@ -24,10 +25,11 @@ type RapCLog struct {
 	status            int
 	message           string
 	err               error
+	logMode           config.LogMode
 	enableWarnFileLog bool
 }
 
-func InitLog(uri, method, message string, status int, err error, enableWarnFileLog bool) RapCLog {
+func InitLog(uri, method, message string, status int, err error, logMode config.LogMode, enableWarnFileLog bool) RapCLog {
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
@@ -39,6 +41,7 @@ func InitLog(uri, method, message string, status int, err error, enableWarnFileL
 		status:            status,
 		message:           message,
 		err:               err,
+		logMode:           logMode,
 		enableWarnFileLog: enableWarnFileLog,
 	}
 }
@@ -52,38 +55,14 @@ func (e RapCLog) Log() {
 	}
 
 	if e.err == nil {
+		if e.logMode != config.LogModeAll {
+			return
+		}
 		delete(logrusFields, "Error")
 		e.log.WithFields(logrusFields).Info(e.message)
 	} else {
-		// create error log file
-		errorLog, err := os.OpenFile(filepath.Join(storagePath, logPath, errorLogFile), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-		if err != nil {
-			e.log.Errorf("Failed to create error file hook: %v", err)
-		} else {
-			defer errorLog.Close()
-
-			e.log.AddHook(&FileHook{
-				writer:    errorLog,
-				logLevels: []logrus.Level{logrus.ErrorLevel, logrus.FatalLevel, logrus.PanicLevel},
-			})
-		}
-
-		// create warning log file
-		if e.enableWarnFileLog {
-			warnLog, err := os.OpenFile(filepath.Join(storagePath, logPath, warningLogFile), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-			if err != nil {
-				e.log.Errorf("Failed to create warning file hook: %v", err)
-			} else {
-				defer warnLog.Close()
-
-				e.log.AddHook(&FileHook{
-					writer:    warnLog,
-					logLevels: []logrus.Level{logrus.WarnLevel},
-				})
-			}
-		}
-
-		var message interface{} = fmt.Sprintf("%s error", e.message)
+		// set message
+		var message interface{} = fmt.Sprint(e.message)
 		if _err, ok := e.err.(*echo.HTTPError); ok {
 			message = _err.Message
 			logrusFields["error"] = _err.Internal
@@ -93,8 +72,38 @@ func (e RapCLog) Log() {
 		}
 
 		if e.status < http.StatusInternalServerError {
+			if e.logMode != config.LogModeErrorAndWarnOnly {
+				return
+			}
+
+			// create warning log file
+			if e.enableWarnFileLog {
+				warnLog, err := os.OpenFile(filepath.Join(storagePath, logPath, warningLogFile), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+				if err != nil {
+					e.log.Errorf("Failed to create warning file hook: %v", err)
+				} else {
+					defer warnLog.Close()
+
+					e.log.AddHook(&FileHook{
+						writer:    warnLog,
+						logLevels: []logrus.Level{logrus.WarnLevel},
+					})
+				}
+			}
 			e.log.WithFields(logrusFields).Warn(message)
 		} else {
+			// create error log file
+			errorLog, err := os.OpenFile(filepath.Join(storagePath, logPath, errorLogFile), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+			if err != nil {
+				e.log.Errorf("Failed to create error file hook: %v", err)
+			} else {
+				defer errorLog.Close()
+
+				e.log.AddHook(&FileHook{
+					writer:    errorLog,
+					logLevels: []logrus.Level{logrus.ErrorLevel, logrus.FatalLevel, logrus.PanicLevel},
+				})
+			}
 			e.log.WithFields(logrusFields).Error(message)
 		}
 	}

@@ -132,7 +132,7 @@ func (uc *usecase) ValidateJwtToken(ctx context.Context, token *jwt.Token, guest
 
 func (uc *usecase) ValidateSessionJwtToken(ctx context.Context, r *http.Request, w http.ResponseWriter, store sessions.Store, guestAccepted bool) (*entity.User, string, error) {
 	// get token from session
-	sess := entity.InitSession(r, w, store, entity.SessionID, uc.cfg.EnableWarnFileLog)
+	sess := entity.InitSession(r, w, store, entity.SessionID, uc.cfg.LogMode, uc.cfg.EnableWarnFileLog)
 	tokenStr, ok := sess.Get(entity.TokenSessionName).(string)
 	if !ok {
 		message := "token not found in session"

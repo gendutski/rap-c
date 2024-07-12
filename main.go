@@ -78,7 +78,7 @@ func serve() {
 		}
 	}
 	// set general middleware
-	e.Use(middleware.SetLog(cfg.EnableWarnFileLog))
+	e.Use(middleware.SetLog(cfg.LogMode, cfg.EnableWarnFileLog))
 	e.Use(echomiddleware.Recover())
 	e.Use(echomiddleware.TimeoutWithConfig(echomiddleware.TimeoutConfig{
 		ErrorMessage: "request timeout",

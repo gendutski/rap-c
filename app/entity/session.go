@@ -2,19 +2,20 @@ package entity
 
 import (
 	"net/http"
+	"rap-c/config"
 
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 )
 
-func InitSession(r *http.Request, w http.ResponseWriter, store sessions.Store, sessionName string, enableWarnFileLog bool) *Session {
+func InitSession(r *http.Request, w http.ResponseWriter, store sessions.Store, sessionName string, logMode config.LogMode, enableWarnFileLog bool) *Session {
 	sess, err := store.Get(r, sessionName)
 	if err != nil {
 		InitLog(r.RequestURI, r.Method, "get session", http.StatusUnauthorized, &echo.HTTPError{
 			Code:     http.StatusBadRequest,
 			Message:  SessionErrorMessage,
 			Internal: NewInternalError(SessionError, err.Error()),
-		}, enableWarnFileLog).Log()
+		}, logMode, enableWarnFileLog).Log()
 		sess, _ = store.New(r, sessionName)
 	}
 

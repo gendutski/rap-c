@@ -72,7 +72,7 @@ func (h *authHandler) Login(e echo.Context) error {
 	}
 
 	// load session
-	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.EnableWarnFileLog)
+	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.LogMode, h.cfg.EnableWarnFileLog)
 
 	// get email has been inputed in query params or from prev login page
 	emailValue := e.QueryParam("email")
@@ -144,7 +144,7 @@ func (h *authHandler) GuestLogin(e echo.Context) error {
 	}
 
 	// init token session
-	tokenSess := entity.InitSession(e.Request(), e.Response(), h.store, entity.SessionID, h.cfg.EnableWarnFileLog)
+	tokenSess := entity.InitSession(e.Request(), e.Response(), h.store, entity.SessionID, h.cfg.LogMode, h.cfg.EnableWarnFileLog)
 	tokenSess.Set(entity.TokenSessionName, token)
 
 	// map route
@@ -156,7 +156,7 @@ func (h *authHandler) GuestLogin(e echo.Context) error {
 
 func (h *authHandler) PostLogin(e echo.Context) error {
 	// init session
-	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.EnableWarnFileLog)
+	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.LogMode, h.cfg.EnableWarnFileLog)
 
 	// map route
 	routeMap := helper.RouteMap(e.Echo().Routes())
@@ -177,6 +177,15 @@ func (h *authHandler) PostLogin(e echo.Context) error {
 		if herr, ok := err.(*echo.HTTPError); ok {
 			sess.Set("email", e.FormValue("email"))
 			sess.Set("error", herr.Message)
+			entity.InitLog(
+				e.Request().RequestURI,
+				e.Request().Method,
+				"",
+				http.StatusOK,
+				err,
+				h.cfg.LogMode,
+				h.cfg.EnableWarnFileLog,
+			).Log()
 			return e.Redirect(http.StatusFound, loginPathRedirect)
 		}
 		return err
@@ -188,13 +197,22 @@ func (h *authHandler) PostLogin(e echo.Context) error {
 		if herr, ok := err.(*echo.HTTPError); ok {
 			sess.Set("email", e.FormValue("email"))
 			sess.Set("error", herr.Message)
+			entity.InitLog(
+				e.Request().RequestURI,
+				e.Request().Method,
+				"",
+				http.StatusOK,
+				err,
+				h.cfg.LogMode,
+				h.cfg.EnableWarnFileLog,
+			).Log()
 			return e.Redirect(http.StatusFound, loginPathRedirect)
 		}
 		return err
 	}
 
 	// init token session
-	tokenSess := entity.InitSession(e.Request(), e.Response(), h.store, entity.SessionID, h.cfg.EnableWarnFileLog)
+	tokenSess := entity.InitSession(e.Request(), e.Response(), h.store, entity.SessionID, h.cfg.LogMode, h.cfg.EnableWarnFileLog)
 	tokenSess.Set(entity.TokenSessionName, token)
 
 	return e.Redirect(http.StatusFound, authorizedPathRedirect)
@@ -202,7 +220,7 @@ func (h *authHandler) PostLogin(e echo.Context) error {
 
 func (h *authHandler) PostLogout(e echo.Context) error {
 	// init session
-	sess := entity.InitSession(e.Request(), e.Response(), h.store, entity.SessionID, h.cfg.EnableWarnFileLog)
+	sess := entity.InitSession(e.Request(), e.Response(), h.store, entity.SessionID, h.cfg.LogMode, h.cfg.EnableWarnFileLog)
 	sess.Destroy()
 
 	// map route
@@ -274,7 +292,7 @@ func (h *authHandler) RequestResetPassword(e echo.Context) error {
 	}
 
 	// load session
-	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.EnableWarnFileLog)
+	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.LogMode, h.cfg.EnableWarnFileLog)
 
 	// get submit login error
 	var submitErr []string
@@ -302,7 +320,7 @@ func (h *authHandler) RequestResetPassword(e echo.Context) error {
 
 func (h *authHandler) SubmitRequestResetPassword(e echo.Context) error {
 	// init session
-	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.EnableWarnFileLog)
+	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.LogMode, h.cfg.EnableWarnFileLog)
 
 	// map route
 	routeMap := helper.RouteMap(e.Echo().Routes())
@@ -355,7 +373,7 @@ func (h *authHandler) ResetPassword(e echo.Context) error {
 	routeMap := helper.RouteMap(e.Echo().Routes())
 
 	// load session
-	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.EnableWarnFileLog)
+	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.LogMode, h.cfg.EnableWarnFileLog)
 
 	// get submit login error
 	var submitErr []string
@@ -390,7 +408,7 @@ func (h *authHandler) SubmitResetPassword(e echo.Context) error {
 	}
 
 	// init session
-	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.EnableWarnFileLog)
+	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.LogMode, h.cfg.EnableWarnFileLog)
 
 	// map route
 	routeMap := helper.RouteMap(e.Echo().Routes())
@@ -425,7 +443,7 @@ func (h *authHandler) SubmitResetPassword(e echo.Context) error {
 	}
 
 	// init token session
-	tokenSess := entity.InitSession(e.Request(), e.Response(), h.store, entity.SessionID, h.cfg.EnableWarnFileLog)
+	tokenSess := entity.InitSession(e.Request(), e.Response(), h.store, entity.SessionID, h.cfg.LogMode, h.cfg.EnableWarnFileLog)
 	tokenSess.Set(entity.TokenSessionName, token)
 
 	return e.Redirect(http.StatusFound, authorizedPathRedirect)

@@ -62,8 +62,8 @@ func (r *repo) DoUserLogin(ctx context.Context, payload *payloadentity.AttemptLo
 	if user.Disabled {
 		return nil, &echo.HTTPError{
 			Code:     http.StatusUnauthorized,
-			Message:  entity.AttemptLoginFailedDisabledMessage,
-			Internal: entity.NewInternalError(entity.AttemptLoginFailed, entity.AttemptLoginFailedDisabledMessage),
+			Message:  entity.AttemptLoginUserDeactivatedMessage,
+			Internal: entity.NewInternalError(entity.AttemptLoginUserDeactivated, entity.AttemptLoginUserDeactivatedMessage),
 		}
 	}
 

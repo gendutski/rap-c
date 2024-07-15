@@ -3,13 +3,12 @@ package route
 import (
 	"net/http"
 	"path/filepath"
-	"rap-c/app/entity"
 	"rap-c/app/usecase/contract"
+	"rap-c/config"
 
 	"rap-c/app/handler/middleware"
 	"rap-c/app/handler/web"
 
-	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 )
 
@@ -21,20 +20,18 @@ const (
 )
 
 type WebHandler struct {
-	JwtUserContextKey string
-	JwtSecret         string
-	GuestAccepted     bool
-	AuthUsecase       contract.AuthUsecase
-	SessionUsecase    contract.SessionUsecase
-	Store             sessions.Store
-	AuthPage          web.AuthPage
-	UserPage          web.UserPage
+	Config         *config.Config
+	Route          *config.Route
+	AuthUsecase    contract.AuthUsecase
+	SessionUsecase contract.SessionUsecase
+	AuthPage       web.AuthPage
+	UserPage       web.UserPage
 }
 
 func SetWebRoute(e *echo.Echo, h *WebHandler) {
 	// home page
 	e.GET("/", func(c echo.Context) error {
-		return c.Redirect(http.StatusFound, "/login")
+		return c.Redirect(http.StatusFound, h.Route.LoginWebPage.Path())
 	})
 	// asset folder
 	e.Static("/assets", filepath.Join(storagePath, assetPath))
@@ -42,14 +39,14 @@ func SetWebRoute(e *echo.Echo, h *WebHandler) {
 
 	// all login user group
 	allLoginRole := []echo.MiddlewareFunc{
-		middleware.ValidateJwtTokenFromSession(h.SessionUsecase, h.GuestAccepted),
-		middleware.PasswordNotChanged(h.JwtUserContextKey, false),
+		middleware.ValidateJwtTokenFromSession(h.SessionUsecase, h.Route, h.Config.EnableGuestLogin()),
+		middleware.PasswordNotChanged(false, h.Route),
 	}
 
 	// non guest only group
 	nonGuestOnly := []echo.MiddlewareFunc{
-		middleware.ValidateJwtTokenFromSession(h.SessionUsecase, false),
-		middleware.PasswordNotChanged(h.JwtUserContextKey, false),
+		middleware.ValidateJwtTokenFromSession(h.SessionUsecase, h.Route, false),
+		middleware.PasswordNotChanged(false, h.Route),
 	}
 
 	// user api
@@ -59,8 +56,9 @@ func SetWebRoute(e *echo.Echo, h *WebHandler) {
 
 func (h *WebHandler) setAuthWebPage(e *echo.Echo) {
 	// login page
-	e.GET(entity.WebLoginPath, h.AuthPage.Login)
-	// e.POST(entity.WebLogoutPath, h.AuthPage.PostLogout)
+	e.Add(h.Route.LoginWebPage.Method(), h.Route.LoginWebPage.Path(), h.AuthPage.Login)
+	// token session submit page
+	e.Add(h.Route.SubmitTokenSessionWebPage.Method(), h.Route.SubmitTokenSessionWebPage.Path(), h.AuthPage.SubmitToken)
 
 	// // reset password
 	// e.GET(entity.WebRequestResetPath, h.AuthPage.RequestResetPassword)
@@ -73,7 +71,7 @@ func (h *WebHandler) setAuthWebPage(e *echo.Echo) {
 
 func (h *WebHandler) setUserWebPage(e *echo.Echo, allLoginRole []echo.MiddlewareFunc, nonGuestOnly []echo.MiddlewareFunc) {
 	// all user
-	// e.GET("/profile", h.UserPage.Profile, allLoginRole...).Name = entity.ProfileRouteName
+	e.Add(h.Route.ProfileWebPage.Method(), h.Route.ProfileWebPage.Path(), h.UserPage.Profile, allLoginRole...)
 
 	// // non guest
 	// e.GET("/user", echo.NotFoundHandler, nonGuestOnly...)

@@ -3,6 +3,7 @@ package middleware
 import (
 	"errors"
 	"rap-c/app/usecase/contract"
+	"rap-c/config"
 
 	"github.com/golang-jwt/jwt/v5"
 	echojwt "github.com/labstack/echo-jwt/v4"
@@ -20,7 +21,7 @@ func GetJWT(jwtSecret []byte) echo.MiddlewareFunc {
 	})
 }
 
-func GetUserFromJWT(jwtUserContextKey string, authUsecase contract.AuthUsecase, guestAccepted bool) echo.MiddlewareFunc {
+func GetUserFromJWT(authUsecase contract.AuthUsecase, guestAccepted bool) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		// validate token with user db middleware
 		return func(c echo.Context) error {
@@ -34,7 +35,7 @@ func GetUserFromJWT(jwtUserContextKey string, authUsecase contract.AuthUsecase, 
 			if err != nil {
 				return err
 			}
-			c.Set(jwtUserContextKey, user)
+			c.Set(config.EchoJwtUserContextKey, user)
 			return next(c)
 		}
 	}

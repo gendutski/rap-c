@@ -6,7 +6,6 @@ import (
 	"rap-c/app/usecase/contract"
 	"rap-c/config"
 
-	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 )
 
@@ -15,22 +14,24 @@ type UserPage interface {
 	Profile(e echo.Context) error
 }
 
-func NewUserPage(cfg *config.Config, store sessions.Store, userUsecase contract.UserUsecase, mailUsecase contract.MailUsecase) UserPage {
+func NewUserPage(cfg *config.Config, router *config.Route, sessionUsecase contract.SessionUsecase, userUsecase contract.UserUsecase, mailUsecase contract.MailUsecase) UserPage {
 	return &userHandler{
-		cfg:         cfg,
-		store:       store,
-		userUsecase: userUsecase,
-		mailUsecase: mailUsecase,
-		BaseHandler: handler.NewBaseHandler(cfg),
+		cfg:            cfg,
+		router:         router,
+		sessionUsecase: sessionUsecase,
+		userUsecase:    userUsecase,
+		mailUsecase:    mailUsecase,
+		BaseHandler:    handler.NewBaseHandler(cfg, router),
 	}
 }
 
 type userHandler struct {
-	cfg         *config.Config
-	store       sessions.Store
-	userUsecase contract.UserUsecase
-	mailUsecase contract.MailUsecase
-	BaseHandler *handler.BaseHandler
+	cfg            *config.Config
+	router         *config.Route
+	sessionUsecase contract.SessionUsecase
+	userUsecase    contract.UserUsecase
+	mailUsecase    contract.MailUsecase
+	BaseHandler    *handler.BaseHandler
 }
 
 func (h *userHandler) Profile(e echo.Context) error {

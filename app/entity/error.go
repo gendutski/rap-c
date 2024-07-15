@@ -14,15 +14,16 @@ const (
 	ValidatorBadRequestMessage                string = "bad request, validator failed"
 
 	// unauthorize
-	AttemptLoginFailed                int    = 401001
-	AttemptLoginFailedMessage         string = "wrong email or password"
-	AttemptLoginFailedDisabledMessage string = "user is deactivated"
-	ValidateTokenFailed               int    = 401002
-	ValidateTokenFailedMessage        string = "invalid token"
-	NonGuestAttemptGuestLogin         int    = 401003
-	NonGuestAttemptGuestLoginMessage  string = "cannot login as guest"
-	SessionTokenNotFound              int    = 401004
-	SessionTokenNotFoundMessage       string = "token session not found"
+	AttemptLoginFailed                 int    = 401001
+	AttemptLoginFailedMessage          string = "wrong email or password"
+	AttemptLoginUserDeactivated        int    = 401002
+	AttemptLoginUserDeactivatedMessage string = "user is deactivated"
+	ValidateTokenFailed                int    = 401003
+	ValidateTokenFailedMessage         string = "invalid token"
+	NonGuestAttemptGuestLogin          int    = 401004
+	NonGuestAttemptGuestLoginMessage   string = "cannot login as guest"
+	SessionTokenNotFound               int    = 401005
+	SessionTokenNotFoundMessage        string = "token session not found"
 
 	// forbidden
 	AttemptGuestLoginForbidden         int    = 403001
@@ -65,6 +66,8 @@ const (
 	SessionUsecaseSetInfoError      int = 5003205
 	SessionUsecaseGetInfoError      int = 5003206
 	SessionUsecaseLogoutError       int = 5003207
+	SessionUsecaseGetErrorError     int = 5003208
+	SessionUsecaseSetPrevRouteError int = 5003209
 	// base handler
 	BaseHandlerGetAuthorError int = 5006001
 	BaseHandlerGetTokenError  int = 5006002

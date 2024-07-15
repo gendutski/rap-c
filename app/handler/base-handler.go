@@ -11,12 +11,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func NewBaseHandler(cfg *config.Config) *BaseHandler {
-	return &BaseHandler{cfg}
+func NewBaseHandler(cfg *config.Config, router *config.Route) *BaseHandler {
+	return &BaseHandler{cfg, router}
 }
 
 type BaseHandler struct {
-	cfg *config.Config
+	cfg    *config.Config
+	router *config.Route
 }
 
 type Layouts struct {
@@ -74,7 +75,8 @@ func (h *BaseHandler) GetLayouts(activeMenu string) *Layouts {
 	return &Layouts{
 		AppName:      config.AppName,
 		Copyright:    h.GetCopyright(),
-		LogoutPath:   entity.WebLogoutPath,
+		LogoutPath:   h.router.LogoutWebPage.Path(),
+		LogoutMethod: h.router.LogoutWebPage.Method(),
 		SidebarMenus: h.GetSidebarMenu(activeMenu),
 	}
 }

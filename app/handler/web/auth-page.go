@@ -3,18 +3,18 @@ package web
 import (
 	"encoding/json"
 	"net/http"
-	"rap-c/app/entity"
 	"rap-c/app/handler"
 	"rap-c/app/usecase/contract"
 	"rap-c/config"
 
-	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 )
 
 type AuthPage interface {
 	// login page
 	Login(e echo.Context) error
+	// set token to session
+	SubmitToken(e echo.Context) error
 	// // post logout
 	// PostLogout(e echo.Context) error
 	// // password must change page
@@ -25,20 +25,20 @@ type AuthPage interface {
 	// ResetPassword(e echo.Context) error
 }
 
-func NewAuthPage(cfg *config.Config, store sessions.Store, authUsecase contract.AuthUsecase, sessionUsecase contract.SessionUsecase, mailUsecase contract.MailUsecase) AuthPage {
+func NewAuthPage(cfg *config.Config, router *config.Route, authUsecase contract.AuthUsecase, sessionUsecase contract.SessionUsecase, mailUsecase contract.MailUsecase) AuthPage {
 	return &authHandler{
 		cfg:            cfg,
-		store:          store,
+		router:         router,
 		authUsecase:    authUsecase,
 		sessionUsecase: sessionUsecase,
 		mailUsecase:    mailUsecase,
-		BaseHandler:    handler.NewBaseHandler(cfg),
+		BaseHandler:    handler.NewBaseHandler(cfg, router),
 	}
 }
 
 type authHandler struct {
 	cfg            *config.Config
-	store          sessions.Store
+	router         *config.Route
 	authUsecase    contract.AuthUsecase
 	sessionUsecase contract.SessionUsecase
 	mailUsecase    contract.MailUsecase
@@ -49,7 +49,9 @@ func (h *authHandler) Login(e echo.Context) error {
 	// check if token session is exists and valid
 	_, _, err := h.sessionUsecase.ValidateJwtToken(e, h.cfg.EnableGuestLogin())
 	if err == nil {
-		return e.Redirect(http.StatusFound, entity.WebDefaultAuthorizedPath)
+		return e.Redirect(http.StatusFound, h.router.DefaultAuthorizedWebPage(
+			h.sessionUsecase.GetPrevRoute(e),
+		).Path())
 	}
 
 	// get email has been inputed in query params
@@ -69,11 +71,6 @@ func (h *authHandler) Login(e echo.Context) error {
 	case []string:
 		infos = append(infos, inf...)
 	}
-	infoMessages := []byte("[]")
-	if len(infos) > 0 {
-		infoMessages, _ = json.Marshal(infos)
-	}
-
 	// get error stored in session
 	herr := h.sessionUsecase.GetError(e)
 	if herr != nil {
@@ -82,18 +79,43 @@ func (h *authHandler) Login(e echo.Context) error {
 		}
 		infos = append(infos, "Sesi telah berakhir, silahkan login ulang!")
 	}
+	// set infos
+	infoMessages := []byte("[]")
+	if len(infos) > 0 {
+		infoMessages, _ = json.Marshal(infos)
+	}
 
 	return e.Render(http.StatusOK, "login.html", map[string]interface{}{
-		"enableGuest":   h.cfg.EnableGuestLogin,
-		"emailValue":    emailValue,
-		"passwordValue": passValue,
-		"infoMessages":  string(infoMessages),
-		// "guestLoginMethod": routeMap.Get(entity.ApiGuestLoginRouteName, "method"),
-		// "guestLoginAction": routeMap.Get(entity.ApiGuestLoginRouteName, "path"),
-		// "loginFormMethod":  routeMap.Get(entity.ApiLoginRouteName, "method"),
-		// "loginFormAction":  routeMap.Get(entity.ApiLoginRouteName, "path"),
-		"resetPath": entity.WebResetPasswordPath,
+		"enableGuest":              h.cfg.EnableGuestLogin,
+		"emailValue":               emailValue,
+		"passwordValue":            passValue,
+		"infoMessages":             string(infoMessages),
+		"guestLoginMethod":         h.router.GuestLoginAPI.Method(),
+		"guestLoginAction":         h.cfg.URL(h.router.GuestLoginAPI.Path()),
+		"loginFormMethod":          h.router.LoginAPI.Method(),
+		"loginFormAction":          h.cfg.URL(h.router.LoginAPI.Path()),
+		"submitTokenSessionMethod": h.router.SubmitTokenSessionWebPage.Method(),
+		"submitTokenSessionAction": h.cfg.URL(h.router.SubmitTokenSessionWebPage.Path()),
+		"resetPath":                h.router.ResetPasswordWebPage.Path(),
 	})
+}
+
+func (h *authHandler) SubmitToken(e echo.Context) error {
+	token := e.FormValue("token")
+	if token == "" {
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "token empty",
+		}
+	}
+	err := h.sessionUsecase.SaveJwtToken(e, token)
+	if err != nil {
+		return err
+	}
+
+	return e.Redirect(http.StatusFound, h.router.DefaultAuthorizedWebPage(
+		h.sessionUsecase.GetPrevRoute(e),
+	).Path())
 }
 
 // func (h *authHandler) PostLogout(e echo.Context) error {

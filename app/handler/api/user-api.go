@@ -23,17 +23,19 @@ type UserAPI interface {
 	GetUserDetailByUsername(e echo.Context) error
 }
 
-func NewUserHandler(cfg *config.Config, userUsecase contract.UserUsecase, mailUsecase contract.MailUsecase) UserAPI {
+func NewUserHandler(cfg *config.Config, router *config.Route, userUsecase contract.UserUsecase, mailUsecase contract.MailUsecase) UserAPI {
 	return &userHandler{
 		cfg:         cfg,
+		router:      router,
 		userUsecase: userUsecase,
 		mailUsecase: mailUsecase,
-		BaseHandler: handler.NewBaseHandler(cfg),
+		BaseHandler: handler.NewBaseHandler(cfg, router),
 	}
 }
 
 type userHandler struct {
 	cfg         *config.Config
+	router      *config.Route
 	userUsecase contract.UserUsecase
 	mailUsecase contract.MailUsecase
 	BaseHandler *handler.BaseHandler

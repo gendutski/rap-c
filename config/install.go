@@ -34,6 +34,19 @@ func readStruct(elm reflect.Type) []string {
 		tag := field.Tag
 		kind := field.Type.Kind()
 
+		// set .env comment
+		if i == 0 {
+			result = append(result, "# main config")
+		} else if field.Name == "JwtSecret" {
+			result = append(result, "\n# jwt config")
+		} else if field.Name == "MailHost" {
+			result = append(result, "\n# smtp mail config")
+		} else if field.Name == "FirstUserUsername" {
+			result = append(result, "\n# first user installation config")
+		} else if field.Name == "MysqlHost" {
+			result = append(result, "\n# mysql config")
+		}
+
 		// env variable
 		envconfig := tag.Get("envconfig")
 		if envconfig == "" || envconfig == "-" {

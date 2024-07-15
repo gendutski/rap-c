@@ -44,6 +44,9 @@ func serve() {
 	cfg := config.InitConfig()
 	db := cfg.ConnectDB()
 
+	// load route config
+	router := config.InitRoute()
+
 	// auto migrate db
 	migrateDB(cfg, db)
 
@@ -57,16 +60,16 @@ func serve() {
 	// load modules
 	authUsecase := authusecase.NewUsecase(cfg, authRepo)
 	userUsecase := userusecase.NewUsecase(cfg, userRepo)
-	mailUsecase := mailusecase.NewUsecase(cfg)
+	mailUsecase := mailusecase.NewUsecase(cfg, router)
 	sessionUsecase := sessionusecase.NewUsecase(cfg, sessionStore, authUsecase)
 
 	// load api handler
-	authAPI := api.NewAuthHandler(cfg, authUsecase, mailUsecase)
-	userAPI := api.NewUserHandler(cfg, userUsecase, mailUsecase)
+	authAPI := api.NewAuthHandler(cfg, router, authUsecase, mailUsecase)
+	userAPI := api.NewUserHandler(cfg, router, userUsecase, mailUsecase)
 
 	// load web handler
-	authWeb := web.NewAuthPage(cfg, sessionStore, authUsecase, sessionUsecase, mailUsecase)
-	userWeb := web.NewUserPage(cfg, sessionStore, userUsecase, mailUsecase)
+	authWeb := web.NewAuthPage(cfg, router, authUsecase, sessionUsecase, mailUsecase)
+	userWeb := web.NewUserPage(cfg, router, sessionUsecase, userUsecase, mailUsecase)
 
 	// init echo
 	e := echo.New()
@@ -74,7 +77,7 @@ func serve() {
 	e.Debug = cfg.EnableDebug()
 	// custom http error handler
 	e.HTTPErrorHandler = func(err error, c echo.Context) {
-		reg := regexp.MustCompile("^" + route.ApiGroup)
+		reg := regexp.MustCompile("^/api")
 		if reg.MatchString(c.Request().RequestURI) {
 			route.APIErrorHandler(e, err, c)
 		} else {
@@ -91,20 +94,20 @@ func serve() {
 
 	// set API route
 	route.SetAPIRoute(e, &route.APIHandler{
-		JwtSecret:     cfg.JwtSecret(),
-		GuestAccepted: cfg.EnableGuestLogin(),
-		AuthUsecase:   authUsecase,
-		AuthAPI:       authAPI,
-		UserAPI:       userAPI,
+		Config:      cfg,
+		Route:       router,
+		AuthUsecase: authUsecase,
+		AuthAPI:     authAPI,
+		UserAPI:     userAPI,
 	})
 	// set web page route
 	route.SetWebRoute(e, &route.WebHandler{
-		JwtSecret:     cfg.JwtSecret(),
-		GuestAccepted: cfg.EnableGuestLogin(),
-		AuthUsecase:   authUsecase,
-		Store:         sessionStore,
-		UserPage:      userWeb,
-		AuthPage:      authWeb,
+		Config:         cfg,
+		Route:          router,
+		AuthUsecase:    authUsecase,
+		SessionUsecase: sessionUsecase,
+		AuthPage:       authWeb,
+		UserPage:       userWeb,
 	})
 
 	// set template renderer

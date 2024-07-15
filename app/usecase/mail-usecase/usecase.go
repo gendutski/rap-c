@@ -17,12 +17,13 @@ const (
 	resetSubject   string = "Permintaan reset pasword di Rap-C"
 )
 
-func NewUsecase(cfg *config.Config) contract.MailUsecase {
-	return &usecase{cfg}
+func NewUsecase(cfg *config.Config, router *config.Route) contract.MailUsecase {
+	return &usecase{cfg, router}
 }
 
 type usecase struct {
-	cfg *config.Config
+	cfg    *config.Config
+	router *config.Route
 }
 
 func (uc *usecase) Welcome(user *databaseentity.User, password string) error {
@@ -53,7 +54,7 @@ func (uc *usecase) Welcome(user *databaseentity.User, password string) error {
 					Instructions: "Silahkan klik tombol dibawah untuk login:",
 					Button: hermes.Button{
 						Text: "Login menggunakan akun anda",
-						Link: uc.cfg.URL(entity.WebLoginPath) + "?" + params.Encode(),
+						Link: uc.cfg.URL(uc.router.LoginWebPage.Path()) + "?" + params.Encode(),
 					},
 				},
 			},
@@ -107,7 +108,7 @@ func (uc *usecase) ResetPassword(user *databaseentity.User, token *databaseentit
 					Button: hermes.Button{
 						Color: "#DC4D2F",
 						Text:  "Reset your password",
-						Link:  uc.cfg.URL(entity.WebResetPasswordPath) + "?" + params.Encode(),
+						Link:  uc.cfg.URL(uc.router.ResetPasswordWebPage.Path()) + "?" + params.Encode(),
 					},
 				},
 			},

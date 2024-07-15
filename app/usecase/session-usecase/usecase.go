@@ -1,6 +1,7 @@
 package sessionusecase
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"rap-c/app/entity"
@@ -100,7 +101,15 @@ func (uc *usecase) SetError(e echo.Context, theError error) error {
 
 	// get or set session
 	sess := uc.initSession(e.Request())
-	sess.Values[errorKey] = herr
+	internal, ok := herr.Internal.(*entity.InternalError)
+	if !ok {
+		internal = &entity.InternalError{}
+	}
+	sess.Values[errorKey], _ = json.Marshal(sessionError{
+		Code:     herr.Code,
+		Message:  herr.Message,
+		Internal: internal,
+	})
 	err := sess.Save(e.Request(), e.Response())
 	if err != nil {
 		return &echo.HTTPError{
@@ -120,13 +129,24 @@ func (uc *usecase) GetError(e echo.Context) *echo.HTTPError {
 		// no error sent
 		return nil
 	}
-	herr, ok := sessionValues.(*echo.HTTPError)
+	// get session value
+	strJSON, ok := sessionValues.([]byte)
 	if !ok {
 		return &echo.HTTPError{
 			Code:    http.StatusInternalServerError,
 			Message: http.StatusText(http.StatusInternalServerError),
 			Internal: entity.NewInternalError(entity.SessionUsecaseErrorInvalidType,
-				fmt.Sprintf("session token conversion is %T, not *echo.HTTPError", sessionValues)),
+				fmt.Sprintf("session error conversion is %T, not []byte", sessionValues)),
+		}
+	}
+	// unmarshal
+	var herr sessionError
+	err := json.Unmarshal(strJSON, &herr)
+	if err != nil {
+		return &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.SessionUsecaseGetErrorError, err.Error()),
 		}
 	}
 	// delete error from session
@@ -134,7 +154,11 @@ func (uc *usecase) GetError(e echo.Context) *echo.HTTPError {
 	sess.Save(e.Request(), e.Response())
 
 	// return
-	return herr
+	return &echo.HTTPError{
+		Code:     herr.Code,
+		Message:  herr.Message,
+		Internal: herr.Internal,
+	}
 }
 
 func (uc *usecase) SetInfo(e echo.Context, info interface{}) error {
@@ -171,6 +195,73 @@ func (uc *usecase) GetInfo(e echo.Context) (interface{}, error) {
 		}
 	}
 	return info, nil
+}
+
+func (uc *usecase) SetPrevRoute(e echo.Context) error {
+	r := e.Request()
+	sess := uc.initSession(r)
+	sess.Values[prevRouteKey], _ = json.Marshal(map[string]string{
+		prevRouteMapMethod: r.Method,
+		prevRouteMapPath:   r.RequestURI,
+	})
+	err := sess.Save(r, e.Response())
+	if err != nil {
+		return &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.SessionUsecaseSetPrevRouteError, err.Error()),
+		}
+	}
+	return nil
+}
+
+func (uc *usecase) GetPrevRoute(e echo.Context) (method string, path string) {
+	r := e.Request()
+
+	// get session, if not exists go away
+	sess := uc.initSession(r)
+	prev, ok := sess.Values[prevRouteKey]
+	if !ok {
+		return
+	}
+	// check session assertion
+	strJSON, ok := prev.([]byte)
+	if !ok {
+		entity.InitLog(r.RequestURI, r.Method, "get session", http.StatusInternalServerError, &echo.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.SessionUsecaseGetInfoError,
+				fmt.Sprintf("session error conversion is %T, not []byte", prev)),
+		}, uc.cfg.LogMode(), uc.cfg.EnableWarnFileLog()).Log()
+		return
+	}
+
+	// delete session
+	delete(sess.Values, prevRouteKey)
+	err := sess.Save(r, e.Response())
+	if err != nil {
+		entity.InitLog(r.RequestURI, r.Method, "get session", http.StatusInternalServerError, &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.SessionUsecaseGetInfoError, err.Error()),
+		}, uc.cfg.LogMode(), uc.cfg.EnableWarnFileLog()).Log()
+		return
+	}
+
+	// unmarshal prev
+	var result map[string]string
+	err = json.Unmarshal(strJSON, &result)
+	if err != nil {
+		entity.InitLog(r.RequestURI, r.Method, "get session", http.StatusInternalServerError, &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.SessionUsecaseGetInfoError, err.Error()),
+		}, uc.cfg.LogMode(), uc.cfg.EnableWarnFileLog()).Log()
+		return
+	}
+	method = result[prevRouteMapMethod]
+	path = result[prevRouteMapPath]
+	return
 }
 
 func (uc *usecase) Logout(e echo.Context) error {

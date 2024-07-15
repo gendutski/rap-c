@@ -25,17 +25,19 @@ type AuthAPI interface {
 	ResetPassword(e echo.Context) error
 }
 
-func NewAuthHandler(cfg *config.Config, authUsecase contract.AuthUsecase, mailUsecase contract.MailUsecase) AuthAPI {
+func NewAuthHandler(cfg *config.Config, router *config.Route, authUsecase contract.AuthUsecase, mailUsecase contract.MailUsecase) AuthAPI {
 	return &authHandler{
 		cfg:         cfg,
+		router:      router,
 		authUsecase: authUsecase,
 		mailUsecase: mailUsecase,
-		BaseHandler: handler.NewBaseHandler(cfg),
+		BaseHandler: handler.NewBaseHandler(cfg, router),
 	}
 }
 
 type authHandler struct {
 	cfg         *config.Config
+	router      *config.Route
 	authUsecase contract.AuthUsecase
 	mailUsecase contract.MailUsecase
 	BaseHandler *handler.BaseHandler

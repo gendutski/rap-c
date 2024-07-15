@@ -45,7 +45,8 @@
                                     <div class="text-center">
                                         <h1 class="h4 text-gray-900 mb-4">Selamat Datang!</h1>
                                     </div>
-                                    <form class="user" method="{{.loginFormMethod}}" action="{{.loginFormAction}}" id="formLogin">
+                                    <form class="user" method="{{.loginFormMethod}}" action="{{.loginFormAction}}"
+                                        id="formLogin">
                                         <div class="form-group">
                                             <input type="email" class="form-control form-control-user"
                                                 id="exampleInputEmail" aria-describedby="emailHelp"
@@ -66,15 +67,17 @@
                                             </div>
                                         </div>
                                         <button type="submit" class="btn btn-dark btn-user btn-block">
-                                            <i class="fa-solid fa-door-open"></i> Login
+                                            <i class="fa-solid fa-door-open" role="status" aria-hidden="true"></i> Login
                                         </button>
                                     </form>
 
                                     {{if .enableGuest}}
-                                    <form class="user" method="{{.guestLoginMethod}}" action="{{.guestLoginAction}}">
+                                    <form class="user" method="{{.guestLoginMethod}}" action="{{.guestLoginAction}}"
+                                        id="formGuest">
                                         <hr>
                                         <button class="btn btn-facebook btn-user btn-block" type="submit">
-                                            <i class="fa-solid fa-masks-theater"></i> Login sebagai tamu
+                                            <i class="fa-solid fa-masks-theater" role="status" aria-hidden="true"></i>
+                                            Login sebagai tamu
                                         </button>
                                     </form>
                                     {{end}}
@@ -93,6 +96,9 @@
         </div>
     </div>
 
+    <form method="{{.submitTokenSessionMethod}}" action="{{.submitTokenSessionAction}}" id="formSubmitToken">
+        <input type="hidden" name="token" value="" />
+    </form>
     <div id="infoBox" style="display: none;">{{.infoMessages}}</div>
 
     <!-- Bootstrap core JavaScript-->
@@ -107,41 +113,26 @@
 
     <!-- Custom scripts for all pages-->
     <script src="/assets/js/sb-admin-2.min.js"></script>
+    <script src="/assets/js/pages/login.js"></script>
 
     <script>
-        function toastFail(message) {
-            Toastify({
-                text: message,
-                duration: 3000,
-                close: true,
-                gravity: "top",
-                position: "right",
-                style: {
-                    background: "linear-gradient(to right, #ff0000, #dd0000)"
-                }
-            }).showToast();
-        }
-
-        function toastoInfo(message) {
-            Toastify({
-                text: message,
-                duration: 3000,
-                close: true,
-                gravity: "top",
-                position: "right",
-                style: {
-                    background: "linear-gradient(to right, #4fbe87, #333333)"
-                }
-            }).showToast();
-        }
-        
         const infoMessages = JSON.parse(document.getElementById("infoBox").innerHTML);
         $(function () {
             if (infoMessages.length > 0) {
                 for (let i = 0; i < infoMessages.length; i++) {
-                    toastoInfo(infoMessages[i])
+                    toastInfo(infoMessages[i])
                 }
             }
+
+            $('#formLogin').on('submit', function () {
+                submitLogin(this);
+                return false;
+            });
+
+            $('#formGuest').on('submit', function () {
+                submitGuest(this);
+                return false;
+            })
         });
     </script>
 

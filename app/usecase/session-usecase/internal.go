@@ -9,11 +9,21 @@ import (
 )
 
 const (
-	sessionID string = "SESSION_ID"
-	tokenKey  string = "token"
-	errorKey  string = "error"
-	infoKey   string = "info"
+	sessionID          string = "SESSION_ID"
+	tokenKey           string = "token"
+	errorKey           string = "error"
+	infoKey            string = "info"
+	prevRouteKey       string = "prevRoute"
+	prevRouteMapMethod string = "method"
+	prevRouteMapPath   string = "path"
 )
+
+// mirror of echo HTTPError
+type sessionError struct {
+	Code     int                   `json:"code"`
+	Message  interface{}           `json:"message"`
+	Internal *entity.InternalError `json:"internal"`
+}
 
 func (uc *usecase) initSession(r *http.Request) *sessions.Session {
 	sess, err := uc.store.Get(r, sessionID)

@@ -102,7 +102,7 @@ func APIErrorHandler(e *echo.Echo, err error, c echo.Context) {
 		} else {
 			message = echo.Map{"code": code, "message": m}
 		}
-	case []string:
+	case map[string][]*entity.ValidatorMessage:
 		if e.Debug {
 			message = echo.Map{"code": code, "message": m, "error": errMessage}
 		} else {

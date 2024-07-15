@@ -17,7 +17,7 @@ type AuthAPI interface {
 	Login(e echo.Context) error
 	// guest login
 	GuestLogin(e echo.Context) error
-	// renew password
+	// renew password for must change password
 	RenewPassword(e echo.Context) error
 	// submit request reset password
 	RequestResetPassword(e echo.Context) error

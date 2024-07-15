@@ -14,12 +14,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func NewUsecase(cfg *config.Config, store sessions.Store, authUsecase contract.AuthUsecase) contract.SessionUsecase {
-	return &usecase{cfg, store, authUsecase}
+func NewUsecase(cfg *config.Config, route *config.Route, store sessions.Store, authUsecase contract.AuthUsecase) contract.SessionUsecase {
+	return &usecase{cfg, route, store, authUsecase}
 }
 
 type usecase struct {
 	cfg         *config.Config
+	route       *config.Route
 	store       sessions.Store
 	authUsecase contract.AuthUsecase
 }
@@ -199,6 +200,22 @@ func (uc *usecase) GetInfo(e echo.Context) (interface{}, error) {
 
 func (uc *usecase) SetPrevRoute(e echo.Context) error {
 	r := e.Request()
+
+	// only accept get method
+	if r.Method != http.MethodGet {
+		return nil
+	}
+
+	// will not set as prev route
+	blacklists := []map[string]string{
+		{"method": uc.route.PasswordMustChangeWebPage.Method(), "path": uc.route.PasswordMustChangeWebPage.Path()},
+	}
+	for _, blacklist := range blacklists {
+		if r.Method == blacklist["method"] && r.RequestURI == blacklist["path"] {
+			return nil
+		}
+	}
+
 	sess := uc.initSession(r)
 	sess.Values[prevRouteKey], _ = json.Marshal(map[string]string{
 		prevRouteMapMethod: r.Method,

@@ -61,7 +61,7 @@ func serve() {
 	authUsecase := authusecase.NewUsecase(cfg, authRepo)
 	userUsecase := userusecase.NewUsecase(cfg, userRepo)
 	mailUsecase := mailusecase.NewUsecase(cfg, router)
-	sessionUsecase := sessionusecase.NewUsecase(cfg, sessionStore, authUsecase)
+	sessionUsecase := sessionusecase.NewUsecase(cfg, router, sessionStore, authUsecase)
 
 	// load api handler
 	authAPI := api.NewAuthHandler(cfg, router, authUsecase, mailUsecase)

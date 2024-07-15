@@ -17,8 +17,8 @@ type AuthPage interface {
 	SubmitToken(e echo.Context) error
 	// post logout
 	Logout(e echo.Context) error
-	// // password must change page
-	// PasswordChanger(e echo.Context) error
+	// password must change page
+	PasswordMustChange(e echo.Context) error
 	// // request reset password page
 	// RequestResetPassword(e echo.Context) error
 	// // reset password page
@@ -129,24 +129,30 @@ func (h *authHandler) Logout(e echo.Context) error {
 	return e.Redirect(http.StatusFound, h.router.LoginWebPage.Path())
 }
 
-// func (h *authHandler) PasswordChanger(e echo.Context) error {
-// 	// get author
-// 	author, err := h.BaseHandler.GetAuthor(e)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	// get token
-// 	token, err := h.BaseHandler.GetToken(e)
-// 	if err != nil {
-// 		return err
-// 	}
+func (h *authHandler) PasswordMustChange(e echo.Context) error {
+	// get author
+	author, err := h.BaseHandler.GetAuthor(e)
+	if err != nil {
+		return err
+	}
+	// get token
+	token, err := h.BaseHandler.GetToken(e)
+	if err != nil {
+		return err
+	}
 
-// 	return e.Render(http.StatusOK, "pass-changer.html", map[string]interface{}{
-// 		"emailValue":   author.Email,
-// 		"token":        token,
-// 		"logoutAction": entity.WebLogoutPath,
-// 	})
-// }
+	return e.Render(http.StatusOK, "pass-changer.html", map[string]interface{}{
+		"emailValue":   author.Email,
+		"token":        token,
+		"renewAction":  h.cfg.URL(h.router.PasswordMustChangeAPI.Path()),
+		"renewMethod":  h.router.PasswordMustChangeAPI.Method(),
+		"logoutAction": h.cfg.URL(h.router.LogoutWebPage.Path()),
+		"logoutMethod": h.router.LogoutWebPage.Method(),
+		"redirectPath": h.router.DefaultAuthorizedWebPage(
+			h.sessionUsecase.GetPrevRoute(e),
+		).Path(),
+	})
+}
 
 // func (h *authHandler) RequestResetPassword(e echo.Context) error {
 // 	// init router

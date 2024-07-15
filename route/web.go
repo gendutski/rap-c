@@ -67,9 +67,9 @@ func (h *WebHandler) setAuthWebPage(e *echo.Echo) {
 	// e.GET(entity.WebRequestResetPath, h.AuthPage.RequestResetPassword)
 	// e.GET(entity.WebResetPasswordPath, h.AuthPage.ResetPassword)
 
-	// // password must change
-	// e.GET(entity.WebPasswordMustChangePath, h.AuthPage.PasswordChanger,
-	// 	middleware.ValidateJwtTokenFromSession(h.SessionUsecase, h.GuestAccepted))
+	// password must change
+	e.Add(h.Route.PasswordMustChangeWebPage.Method(), h.Route.PasswordMustChangeWebPage.Path(),
+		h.AuthPage.PasswordMustChange, middleware.ValidateJwtTokenFromSession(h.SessionUsecase, h.Route, false))
 }
 
 func (h *WebHandler) setMainWebPage(e *echo.Echo, allLoginRole []echo.MiddlewareFunc, nonGuestOnly []echo.MiddlewareFunc) {

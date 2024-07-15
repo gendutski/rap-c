@@ -4,18 +4,19 @@ import (
 	"fmt"
 	"net/http"
 	"rap-c/app/entity"
+	databaseentity "rap-c/app/entity/database-entity"
 	"rap-c/config"
 	"time"
 
 	"github.com/labstack/echo/v4"
 )
 
-func NewBaseHandler(cfg config.Config) *BaseHandler {
+func NewBaseHandler(cfg *config.Config) *BaseHandler {
 	return &BaseHandler{cfg}
 }
 
 type BaseHandler struct {
-	cfg config.Config
+	cfg *config.Config
 }
 
 type Layouts struct {
@@ -39,18 +40,34 @@ type SidebarMenuItem struct {
 	SubMenus []*SidebarMenuItem
 }
 
-func (h *BaseHandler) GetAuthor(e echo.Context) (*entity.User, error) {
+func (h *BaseHandler) GetAuthor(e echo.Context) (*databaseentity.User, error) {
 	// get author
-	_author := e.Get(h.cfg.JwtUserContextKey)
-	author, ok := _author.(*entity.User)
+	_author := e.Get(config.EchoJwtUserContextKey)
+	author, ok := _author.(*databaseentity.User)
 	if !ok {
 		return nil, &echo.HTTPError{
-			Code:     http.StatusInternalServerError,
-			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.BaseHandlerGetAuthorError, "failed type assertion author"),
+			Code:    http.StatusInternalServerError,
+			Message: http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.BaseHandlerGetAuthorError,
+				fmt.Sprintf("author conversion is %T, not *databaseentity.User", author)),
 		}
 	}
 	return author, nil
+}
+
+func (h *BaseHandler) GetToken(e echo.Context) (string, error) {
+	// get author
+	_token := e.Get(config.EchoTokenContextKey)
+	token, ok := _token.(string)
+	if !ok {
+		return "", &echo.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.BaseHandlerGetTokenError,
+				fmt.Sprintf("token conversion is %T, not string", token)),
+		}
+	}
+	return token, nil
 }
 
 func (h *BaseHandler) GetLayouts(activeMenu string) *Layouts {
@@ -58,7 +75,6 @@ func (h *BaseHandler) GetLayouts(activeMenu string) *Layouts {
 		AppName:      config.AppName,
 		Copyright:    h.GetCopyright(),
 		LogoutPath:   entity.WebLogoutPath,
-		LogoutMethod: entity.WebLogoutMethod,
 		SidebarMenus: h.GetSidebarMenu(activeMenu),
 	}
 }

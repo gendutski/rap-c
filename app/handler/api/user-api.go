@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"rap-c/app/entity"
+	payloadentity "rap-c/app/entity/payload-entity"
 	"rap-c/app/handler"
 	"rap-c/app/usecase/contract"
 	"rap-c/config"
@@ -22,7 +23,7 @@ type UserAPI interface {
 	GetUserDetailByUsername(e echo.Context) error
 }
 
-func NewUserHandler(cfg config.Config, userUsecase contract.UserUsecase, mailUsecase contract.MailUsecase) UserAPI {
+func NewUserHandler(cfg *config.Config, userUsecase contract.UserUsecase, mailUsecase contract.MailUsecase) UserAPI {
 	return &userHandler{
 		cfg:         cfg,
 		userUsecase: userUsecase,
@@ -32,17 +33,21 @@ func NewUserHandler(cfg config.Config, userUsecase contract.UserUsecase, mailUse
 }
 
 type userHandler struct {
-	cfg         config.Config
+	cfg         *config.Config
 	userUsecase contract.UserUsecase
 	mailUsecase contract.MailUsecase
 	BaseHandler *handler.BaseHandler
 }
 
 func (h *userHandler) Create(e echo.Context) error {
-	payload := new(entity.CreateUserPayload)
+	payload := new(payloadentity.CreateUserPayload)
 	err := e.Bind(payload)
 	if err != nil {
-		return err
+		return &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.AllHandlerBindError, fmt.Sprintf("user-api.Create bind error: %v", err)),
+		}
 	}
 	ctx := e.Request().Context()
 
@@ -66,7 +71,7 @@ func (h *userHandler) Create(e echo.Context) error {
 			fmt.Sprintf("Send welcome email to %s", user.Email),
 			http.StatusOK,
 			nil,
-			h.cfg.LogMode,
+			h.cfg.LogMode(),
 			false,
 		).Log()
 		err = h.mailUsecase.Welcome(user, password)
@@ -77,8 +82,8 @@ func (h *userHandler) Create(e echo.Context) error {
 				"send welcome mail",
 				http.StatusOK,
 				err,
-				h.cfg.LogMode,
-				h.cfg.EnableWarnFileLog,
+				h.cfg.LogMode(),
+				h.cfg.EnableWarnFileLog(),
 			).Log()
 		}
 	}()
@@ -87,10 +92,14 @@ func (h *userHandler) Create(e echo.Context) error {
 }
 
 func (h *userHandler) GetUserList(e echo.Context) error {
-	req := new(entity.GetUserListRequest)
+	req := new(payloadentity.GetUserListRequest)
 	err := e.Bind(req)
 	if err != nil {
-		return err
+		return &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.AllHandlerBindError, fmt.Sprintf("user-api.GetUserList bind error: %v", err)),
+		}
 	}
 	ctx := e.Request().Context()
 
@@ -106,10 +115,14 @@ func (h *userHandler) GetUserList(e echo.Context) error {
 }
 
 func (h *userHandler) GetTotalUserList(e echo.Context) error {
-	req := new(entity.GetUserListRequest)
+	req := new(payloadentity.GetUserListRequest)
 	err := e.Bind(req)
 	if err != nil {
-		return err
+		return &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.AllHandlerBindError, fmt.Sprintf("user-api.GetTotalUserList bind error: %v", err)),
+		}
 	}
 	ctx := e.Request().Context()
 

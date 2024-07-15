@@ -1,8 +1,10 @@
 package contract
 
-import "rap-c/app/entity"
+import (
+	databaseentity "rap-c/app/entity/database-entity"
+)
 
 type MailUsecase interface {
-	Welcome(user *entity.User, password string) error
-	ResetPassword(user *entity.User, token *entity.PasswordResetToken) error
+	Welcome(user *databaseentity.User, password string) error
+	ResetPassword(user *databaseentity.User, token *databaseentity.PasswordResetToken) error
 }

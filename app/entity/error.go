@@ -4,61 +4,76 @@ import "strings"
 
 const (
 	// bad request
-	UserRepoCreateEmailDuplicate                    int    = 40001
-	UserRepoCreateEmailDuplicateMessage             string = "duplicate email, email %s already exists"
-	UserRepoCreateUsernameDuplicate                 int    = 40002
-	UserRepoCreateUsernameDuplicateMessage          string = "duplicate username, username %s already exists"
-	UserUsecaseAttemptLoginDisableUser              int    = 40003
-	UserUsecaseAttemptLoginDisableUserMessage       string = "user is disabled"
-	UserusecaseAttemptLogigIncorrectPassword        int    = 40004
-	UserusecaseAttemptLoginIncorrectPasswordMessage string = "incorrect password"
-	UserUsecaseRenewPasswordUnchanged               int    = 40005
-	UserUsecaseRenewPasswordUnchangedMessage        string = "you cannot use old password for new password"
-	ValidatorNotValid                               int    = 40098
-	MysqlDuplicateKeyError                          int    = 40099
-	MysqlDuplicateKeyErrorMessage                   string = "duplicate key error"
+	CreateUserEmailDuplicate                  int    = 400001
+	CreateUserEmailDuplicateMessage           string = "duplicate email, email '%s` is already in use"
+	CreateUserUsernameDuplicate               int    = 400002
+	CreateUserUsernameDuplicateMessage        string = "duplicate username, username '%s` is already in use"
+	RenewPasswordWithUnchangedPassword        int    = 400003
+	RenewPasswordWithUnchangedPasswordMessage string = "cannot use same password"
+	ValidatorBadRequest                       int    = 400999
+	ValidatorBadRequestMessage                string = "bad request, validator failed"
 
-	// unauthorized
-	UserUsecaseGetUserFromJwtClaimsUnauthorized        int    = 40101
-	UserUsecaseGetUserFromJwtClaimsUnauthorizedMessage string = "user does not match with token"
-	UserUsecaseValidateSessionJwtTokenUnauthorized     int    = 40102
+	// unauthorize
+	AttemptLoginFailed                int    = 401001
+	AttemptLoginFailedMessage         string = "wrong email or password"
+	AttemptLoginFailedDisabledMessage string = "user is deactivated"
+	ValidateTokenFailed               int    = 401002
+	ValidateTokenFailedMessage        string = "invalid token"
+	NonGuestAttemptGuestLogin         int    = 401003
+	NonGuestAttemptGuestLoginMessage  string = "cannot login as guest"
+	SessionTokenNotFound              int    = 401004
+	SessionTokenNotFoundMessage       string = "token session not found"
 
 	// forbidden
-	UserUsecaseAttemptGuestLoginDisabled              int    = 40301
-	UserUsecaseAttemptGuestLoginDisabledMessage       string = "guest login disabled"
-	UserUsecaseGetUserFromJwtClaimsForbidGuest        int    = 40302
-	UserUsecaseGetUserFromJwtClaimsForbidGuestMessage string = "this page cannot accessed by guest"
-	MiddlewarePasswordNotChangedSamePassword          int    = 40302
-	MiddlewarePasswordNotChangedSamePasswordMessage   string = "password must be changed, cannot use same password"
+	AttemptGuestLoginForbidden         int    = 403001
+	AttemptGuestLoginForbiddenMessage  string = "guest login is disabled"
+	GuestTokenForbidden                int    = 403002
+	GuestTokenForbiddenMessage         string = "guest token is forbidden"
+	MustChangePasswordForbidden        int    = 403003
+	MustChangePasswordForbiddenMessage string = "the password must be changed"
 
 	// not found
-	UserRepoGetUserByFieldNotFound              int    = 40401
-	UserRepoGetUserByFieldNotFoundMessage       string = "user with the %s `%v` not found"
-	UserRepoValidateResetTokenNotFound          int    = 40402
-	UserRepoValidateResetTokenNotFoundMessage   string = "email `%s` and token `%s` not valid"
-	UserUsecaseAttemptGuestLoginNotFound        int    = 40403
-	UserUsecaseAttemptGuestLoginNotFoundMessage string = "guest user not found"
+	ResetPasswordRequestNotFound        int    = 404001
+	ResetPasswordRequestNotFoundMessage string = "request reset password not found"
+	SearchSingleUserNotFOund            int    = 404002
+	SearchSingleUserNotFOundMessage     string = "user with `%s` = `%s` not found"
 
-	// internal error
-	UserRepoCreateError                      int    = 50001
-	UserRepoUpdateError                      int    = 50002
-	UserRepoGetUserByFieldError              int    = 50003
-	UserRepoGetTotalUsersByRequestError      int    = 50004
-	UserRepoGetUsersByRequestError           int    = 50005
-	UserRepoGenerateUserResetPasswordError   int    = 50006
-	UserRepoValidateResetTokenError          int    = 50007
-	UserUsecaseCreateError                   int    = 50008
-	UserUsecaseGenerateStrongPasswordError   int    = 50009
-	UserUsecaseEncryptPasswordError          int    = 50010
-	UserUsecaseAttemptLoginError             int    = 50011
-	UserUsecaseGenerateJwtTokenError         int    = 50012
-	UserUsecaseValidateJwtTokenError         int    = 50013
-	BaseHandlerGetAuthorError                int    = 50014
-	MailUsecaseGeneratingEmailHTMLError      int    = 50015
-	MailUsecaseGeneratingEmailPlainTextError int    = 50016
-	UserRepoResetPasswordError               int    = 50017
-	SessionError                             int    = 50099
-	SessionErrorMessage                      string = "session error"
+	// internal service error
+	// auth repository
+	AuthRepoGetUserLoginError              int = 5000101
+	AuthRepoGenerateUserResetPasswordError int = 5000102
+	AuthRepoValidateResetTokenError        int = 5000103
+	AuthRepoDoResetPasswordError           int = 5000104
+	AuthRepoDoRenewPasswordError           int = 5000105
+	// user repository
+	UserRepoCreateError                 int = 5000201
+	UserRepoUpdateError                 int = 5000202
+	UserRepoGetUserByFieldError         int = 5000203
+	UserRepoGetTotalUsersByRequestError int = 5000204
+	UserRepoGetUsersByRequestError      int = 5000205
+	// auth usecase
+	AuthUsecaseGenerateJwtTokenError int = 5003001
+	AuthUsecaseValidateJwtTokenError int = 5003002
+	// mail usecase
+	MailUsecaseGenerateHTMLError      int = 5003101
+	MailUsecaseGeneratePlainTextError int = 5003102
+	// session usecase
+	SessionUsecaseTokenInvalidType  int = 5003201
+	SessionUsecaseErrorInvalidType  int = 5003202
+	SessionUsecaseSaveJwtTokenError int = 5003203
+	SessionUsecaseSetErrorError     int = 5003204
+	SessionUsecaseSetInfoError      int = 5003205
+	SessionUsecaseGetInfoError      int = 5003206
+	SessionUsecaseLogoutError       int = 5003207
+	// base handler
+	BaseHandlerGetAuthorError int = 5006001
+	BaseHandlerGetTokenError  int = 5006002
+	// all handler
+	AllHandlerBindError int = 5009101
+	// helper
+	HelperGenerateTokenError          int = 5009901
+	HelperEncryptPasswordError        int = 5009902
+	HelperGenerateStrongPasswordError int = 5009903
 )
 
 // for echo.HTTPError.Internal

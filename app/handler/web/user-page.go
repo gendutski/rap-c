@@ -15,7 +15,7 @@ type UserPage interface {
 	Profile(e echo.Context) error
 }
 
-func NewUserPage(cfg config.Config, store sessions.Store, userUsecase contract.UserUsecase, mailUsecase contract.MailUsecase) UserPage {
+func NewUserPage(cfg *config.Config, store sessions.Store, userUsecase contract.UserUsecase, mailUsecase contract.MailUsecase) UserPage {
 	return &userHandler{
 		cfg:         cfg,
 		store:       store,
@@ -26,7 +26,7 @@ func NewUserPage(cfg config.Config, store sessions.Store, userUsecase contract.U
 }
 
 type userHandler struct {
-	cfg         config.Config
+	cfg         *config.Config
 	store       sessions.Store
 	userUsecase contract.UserUsecase
 	mailUsecase contract.MailUsecase

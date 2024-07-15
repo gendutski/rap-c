@@ -2,18 +2,18 @@ package userusecase_test
 
 import (
 	"fmt"
-	"rap-c/app/entity"
+	databaseentity "rap-c/app/entity/database-entity"
 
 	"github.com/golang/mock/gomock"
 )
 
 type createMatcher struct {
-	expected *entity.User
+	expected *databaseentity.User
 	want     string
 }
 
 func (r *createMatcher) Matches(x interface{}) bool {
-	req, ok := x.(*entity.User)
+	req, ok := x.(*databaseentity.User)
 	if !ok {
 		return false
 	}
@@ -55,6 +55,6 @@ func (r *createMatcher) String() string {
 	return fmt.Sprintf("%v (%T)", r.expected, r.expected)
 }
 
-func CreateMatcher(expected *entity.User) gomock.Matcher {
+func CreateMatcher(expected *databaseentity.User) gomock.Matcher {
 	return &createMatcher{expected: expected}
 }

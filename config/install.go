@@ -14,18 +14,8 @@ import (
 
 // generate .env file from struct envconfig tags
 func GenerateDotEnv() {
-	var rows []string
-	for desc, itm := range map[string]interface{}{
-		"# main config environment":            Config{},
-		"# mysql database environment":         database{},
-		"# first user auto insert environment": FirstUser{},
-	} {
-		if len(rows) > 0 {
-			desc = "\n" + desc
-		}
-		rows = append(rows, desc)
-		rows = append(rows, readStruct(reflect.TypeOf(itm))...)
-	}
+	cfg := config{}
+	rows := readStruct(reflect.TypeOf(cfg))
 	text := strings.Join(rows, "\n")
 	err := os.WriteFile(".env", []byte(text), 0644)
 	if err != nil {

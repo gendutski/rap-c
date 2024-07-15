@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/url"
 	"rap-c/app/entity"
+	databaseentity "rap-c/app/entity/database-entity"
 	"rap-c/app/usecase/contract"
 	"rap-c/config"
 
@@ -16,15 +17,15 @@ const (
 	resetSubject   string = "Permintaan reset pasword di Rap-C"
 )
 
-func NewUsecase(cfg config.Config) contract.MailUsecase {
+func NewUsecase(cfg *config.Config) contract.MailUsecase {
 	return &usecase{cfg}
 }
 
 type usecase struct {
-	cfg config.Config
+	cfg *config.Config
 }
 
-func (uc *usecase) Welcome(user *entity.User, password string) error {
+func (uc *usecase) Welcome(user *databaseentity.User, password string) error {
 	// init hermes
 	h := uc.initHermes()
 
@@ -66,7 +67,7 @@ func (uc *usecase) Welcome(user *entity.User, password string) error {
 		return &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
 			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.MailUsecaseGeneratingEmailHTMLError, err.Error()),
+			Internal: entity.NewInternalError(entity.MailUsecaseGenerateHTMLError, err.Error()),
 		}
 	}
 
@@ -76,14 +77,14 @@ func (uc *usecase) Welcome(user *entity.User, password string) error {
 		return &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
 			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.MailUsecaseGeneratingEmailPlainTextError, err.Error()),
+			Internal: entity.NewInternalError(entity.MailUsecaseGeneratePlainTextError, err.Error()),
 		}
 	}
 
 	return uc.send(user.Email, welcomeSubject, resText, resHtml)
 }
 
-func (uc *usecase) ResetPassword(user *entity.User, token *entity.PasswordResetToken) error {
+func (uc *usecase) ResetPassword(user *databaseentity.User, token *databaseentity.PasswordResetToken) error {
 	// init hermes
 	h := uc.initHermes()
 
@@ -123,7 +124,7 @@ func (uc *usecase) ResetPassword(user *entity.User, token *entity.PasswordResetT
 		return &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
 			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.MailUsecaseGeneratingEmailHTMLError, err.Error()),
+			Internal: entity.NewInternalError(entity.MailUsecaseGenerateHTMLError, err.Error()),
 		}
 	}
 
@@ -133,7 +134,7 @@ func (uc *usecase) ResetPassword(user *entity.User, token *entity.PasswordResetT
 		return &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
 			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.MailUsecaseGeneratingEmailPlainTextError, err.Error()),
+			Internal: entity.NewInternalError(entity.MailUsecaseGeneratePlainTextError, err.Error()),
 		}
 	}
 

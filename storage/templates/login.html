@@ -45,7 +45,7 @@
                                     <div class="text-center">
                                         <h1 class="h4 text-gray-900 mb-4">Selamat Datang!</h1>
                                     </div>
-                                    <form class="user" method="{{.loginFormMethod}}" action="{{.loginFormAction}}">
+                                    <form class="user" method="{{.loginFormMethod}}" action="{{.loginFormAction}}" id="formLogin">
                                         <div class="form-group">
                                             <input type="email" class="form-control form-control-user"
                                                 id="exampleInputEmail" aria-describedby="emailHelp"
@@ -93,7 +93,6 @@
         </div>
     </div>
 
-    <div id="errorBox" style="display: none;">{{.loginError}}</div>
     <div id="infoBox" style="display: none;">{{.infoMessages}}</div>
 
     <!-- Bootstrap core JavaScript-->
@@ -136,15 +135,8 @@
             }).showToast();
         }
         
-        const loginError = JSON.parse(document.getElementById("errorBox").innerHTML);
         const infoMessages = JSON.parse(document.getElementById("infoBox").innerHTML);
         $(function () {
-            if (loginError.length > 0) {
-                for (let i = 0; i < loginError.length; i++) {
-                    toastFail(loginError[i])
-                }
-            }
-
             if (infoMessages.length > 0) {
                 for (let i = 0; i < infoMessages.length; i++) {
                     toastoInfo(infoMessages[i])

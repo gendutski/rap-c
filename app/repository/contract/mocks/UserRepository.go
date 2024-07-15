@@ -6,7 +6,8 @@ package mocks
 
 import (
 	context "context"
-	entity "rap-c/app/entity"
+	databaseentity "rap-c/app/entity/database-entity"
+	payloadentity "rap-c/app/entity/payload-entity"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -36,7 +37,7 @@ func (m *MockUserRepository) EXPECT() *MockUserRepositoryMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockUserRepository) Create(ctx context.Context, user *entity.User) error {
+func (m *MockUserRepository) Create(ctx context.Context, user *databaseentity.User) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, user)
 	ret0, _ := ret[0].(error)
@@ -49,23 +50,8 @@ func (mr *MockUserRepositoryMockRecorder) Create(ctx, user interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockUserRepository)(nil).Create), ctx, user)
 }
 
-// GenerateUserResetPassword mocks base method.
-func (m *MockUserRepository) GenerateUserResetPassword(ctx context.Context, email string) (*entity.PasswordResetToken, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GenerateUserResetPassword", ctx, email)
-	ret0, _ := ret[0].(*entity.PasswordResetToken)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GenerateUserResetPassword indicates an expected call of GenerateUserResetPassword.
-func (mr *MockUserRepositoryMockRecorder) GenerateUserResetPassword(ctx, email interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateUserResetPassword", reflect.TypeOf((*MockUserRepository)(nil).GenerateUserResetPassword), ctx, email)
-}
-
 // GetTotalUsersByRequest mocks base method.
-func (m *MockUserRepository) GetTotalUsersByRequest(ctx context.Context, req *entity.GetUserListRequest) (int64, error) {
+func (m *MockUserRepository) GetTotalUsersByRequest(ctx context.Context, req *payloadentity.GetUserListRequest) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTotalUsersByRequest", ctx, req)
 	ret0, _ := ret[0].(int64)
@@ -80,10 +66,10 @@ func (mr *MockUserRepositoryMockRecorder) GetTotalUsersByRequest(ctx, req interf
 }
 
 // GetUserByField mocks base method.
-func (m *MockUserRepository) GetUserByField(ctx context.Context, fieldName string, fieldValue interface{}, notFoundStatus int) (*entity.User, error) {
+func (m *MockUserRepository) GetUserByField(ctx context.Context, fieldName string, fieldValue interface{}, notFoundStatus int) (*databaseentity.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserByField", ctx, fieldName, fieldValue, notFoundStatus)
-	ret0, _ := ret[0].(*entity.User)
+	ret0, _ := ret[0].(*databaseentity.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -95,10 +81,10 @@ func (mr *MockUserRepositoryMockRecorder) GetUserByField(ctx, fieldName, fieldVa
 }
 
 // GetUsersByRequest mocks base method.
-func (m *MockUserRepository) GetUsersByRequest(ctx context.Context, req *entity.GetUserListRequest) ([]*entity.User, error) {
+func (m *MockUserRepository) GetUsersByRequest(ctx context.Context, req *payloadentity.GetUserListRequest) ([]*databaseentity.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUsersByRequest", ctx, req)
-	ret0, _ := ret[0].([]*entity.User)
+	ret0, _ := ret[0].([]*databaseentity.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -109,22 +95,8 @@ func (mr *MockUserRepositoryMockRecorder) GetUsersByRequest(ctx, req interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersByRequest", reflect.TypeOf((*MockUserRepository)(nil).GetUsersByRequest), ctx, req)
 }
 
-// ResetPassword mocks base method.
-func (m *MockUserRepository) ResetPassword(ctx context.Context, user *entity.User, reset *entity.PasswordResetToken) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResetPassword", ctx, user, reset)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ResetPassword indicates an expected call of ResetPassword.
-func (mr *MockUserRepositoryMockRecorder) ResetPassword(ctx, user, reset interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*MockUserRepository)(nil).ResetPassword), ctx, user, reset)
-}
-
 // Update mocks base method.
-func (m *MockUserRepository) Update(ctx context.Context, user *entity.User) error {
+func (m *MockUserRepository) Update(ctx context.Context, user *databaseentity.User) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, user)
 	ret0, _ := ret[0].(error)
@@ -135,19 +107,4 @@ func (m *MockUserRepository) Update(ctx context.Context, user *entity.User) erro
 func (mr *MockUserRepositoryMockRecorder) Update(ctx, user interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUserRepository)(nil).Update), ctx, user)
-}
-
-// ValidateResetToken mocks base method.
-func (m *MockUserRepository) ValidateResetToken(ctx context.Context, email, token string) (*entity.PasswordResetToken, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ValidateResetToken", ctx, email, token)
-	ret0, _ := ret[0].(*entity.PasswordResetToken)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ValidateResetToken indicates an expected call of ValidateResetToken.
-func (mr *MockUserRepositoryMockRecorder) ValidateResetToken(ctx, email, token interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateResetToken", reflect.TypeOf((*MockUserRepository)(nil).ValidateResetToken), ctx, email, token)
 }

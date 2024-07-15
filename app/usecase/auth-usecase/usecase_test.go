@@ -2,8 +2,11 @@ package authusecase_test
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"rap-c/app/entity"
+	databaseentity "rap-c/app/entity/database-entity"
+	payloadentity "rap-c/app/entity/payload-entity"
 	"rap-c/app/helper"
 	repomocks "rap-c/app/repository/contract/mocks"
 	authusecase "rap-c/app/usecase/auth-usecase"
@@ -18,96 +21,66 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func initUsecase(ctrl *gomock.Controller, cfg config.Config) (contract.AuthUsecase, *repomocks.MockUserRepository) {
-	userRepo := repomocks.NewMockUserRepository(ctrl)
-	uc := authusecase.NewUsecase(cfg, userRepo)
-	return uc, userRepo
+func initUsecase(ctrl *gomock.Controller, cfg *config.Config) (contract.AuthUsecase, *repomocks.MockAuthRepository) {
+	authRepo := repomocks.NewMockAuthRepository(ctrl)
+	uc := authusecase.NewUsecase(cfg, authRepo)
+	return uc, authRepo
 }
 
 func Test_AttemptLogin(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	uc, userRepo := initUsecase(ctrl, config.Config{})
+	uc, authRepo := initUsecase(ctrl, &config.Config{})
 	ctx := context.Background()
-	dt, _ := time.Parse("2006-01-02 15:04:05", "2024-06-25 01:14:36")
-
 	password := "password"
-	hashPass, _ := helper.EncryptPassword(password)
 
 	t.Run("success", func(t *testing.T) {
-		validUser := entity.User{
-			ID:                 1,
-			Username:           "gendutski",
-			FullName:           "Firman Darmawan",
-			Email:              "mvp.firman.darmawan@gmail.com",
-			Password:           hashPass,
-			PasswordMustChange: false,
-			CreatedAt:          dt,
-			UpdatedAt:          dt,
-		}
-		userRepo.EXPECT().GetUserByField(ctx, "email", validUser.Email, http.StatusBadRequest).Return(&validUser, nil).Times(1)
-
-		res, err := uc.AttemptLogin(ctx, &entity.AttemptLoginPayload{
-			Email:    "mvp.firman.darmawan@gmail.com",
+		validUser := databaseentity.User{
+			ID:       1,
+			Email:    "gendutski@gmail.com",
 			Password: password,
-		})
+		}
+		payload := &payloadentity.AttemptLoginPayload{
+			Email:    "gendutski@gmail.com",
+			Password: password,
+		}
+		authRepo.EXPECT().DoUserLogin(ctx, payload).Return(&validUser, nil).Times(1)
+
+		res, err := uc.AttemptLogin(ctx, payload)
 		assert.Nil(t, err)
 		assert.Equal(t, &validUser, res)
 	})
 
-	t.Run("failed, disable user", func(t *testing.T) {
-		validUser := entity.User{
-			ID:                 1,
-			Username:           "gendutski",
-			FullName:           "Firman Darmawan",
-			Email:              "mvp.firman.darmawan@gmail.com",
-			Password:           hashPass,
-			PasswordMustChange: false,
-			Disabled:           true,
-			CreatedAt:          dt,
-			UpdatedAt:          dt,
-		}
-		userRepo.EXPECT().GetUserByField(ctx, "email", validUser.Email, http.StatusBadRequest).Return(&validUser, nil).Times(1)
-
-		res, err := uc.AttemptLogin(ctx, &entity.AttemptLoginPayload{
-			Email:    "mvp.firman.darmawan@gmail.com",
+	t.Run("empty email", func(t *testing.T) {
+		payload := &payloadentity.AttemptLoginPayload{
 			Password: password,
-		})
-		assert.Equal(t, http.StatusBadRequest, err.(*echo.HTTPError).Code)
-		assert.Nil(t, res)
-	})
-
-	t.Run("failed, incorrect password", func(t *testing.T) {
-		validUser := entity.User{
-			ID:                 1,
-			Username:           "gendutski",
-			FullName:           "Firman Darmawan",
-			Email:              "mvp.firman.darmawan@gmail.com",
-			Password:           hashPass,
-			PasswordMustChange: false,
-			CreatedAt:          dt,
-			UpdatedAt:          dt,
 		}
-		userRepo.EXPECT().GetUserByField(ctx, "email", validUser.Email, http.StatusBadRequest).Return(&validUser, nil).Times(1)
 
-		res, err := uc.AttemptLogin(ctx, &entity.AttemptLoginPayload{
-			Email:    "mvp.firman.darmawan@gmail.com",
-			Password: "password123",
-		})
-		assert.Equal(t, http.StatusBadRequest, err.(*echo.HTTPError).Code)
+		res, err := uc.AttemptLogin(ctx, payload)
 		assert.Nil(t, res)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, herr.Code)
+		assert.Equal(t, map[string][]*entity.ValidatorMessage{
+			"email": {{Tag: "required"}},
+		}, herr.Message)
 	})
 
-	t.Run("failed, user not found", func(t *testing.T) {
-		userRepo.EXPECT().GetUserByField(ctx, "email", "mvp.firman.darmawan@gmail.com", http.StatusBadRequest).Return(nil, &echo.HTTPError{
-			Code: http.StatusBadRequest,
-		}).Times(1)
+	t.Run("not valid email & empty password", func(t *testing.T) {
+		payload := &payloadentity.AttemptLoginPayload{
+			Email: "foo",
+		}
 
-		res, err := uc.AttemptLogin(ctx, &entity.AttemptLoginPayload{
-			Email:    "mvp.firman.darmawan@gmail.com",
-			Password: "password123",
-		})
-		assert.Equal(t, http.StatusBadRequest, err.(*echo.HTTPError).Code)
+		res, err := uc.AttemptLogin(ctx, payload)
 		assert.Nil(t, res)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, herr.Code)
+		assert.Equal(t, map[string][]*entity.ValidatorMessage{
+			"email":    {{Tag: "email"}},
+			"password": {{Tag: "required"}},
+		}, herr.Message)
 	})
 }
 
@@ -116,60 +89,71 @@ func Test_AttemptGuestLogin(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("success", func(t *testing.T) {
-		uc, userRepo := initUsecase(ctrl, config.Config{EnableGuestLogin: true})
+		uc, authRepo := initUsecase(ctrl, config.InitTestConfig(map[string]string{"ENABLE_GUEST_LOGIN": "true"}))
 
-		validUsers := []*entity.User{{
-			ID:       2,
-			Username: "Guest",
-			IsGuest:  true,
-		}}
-		userRepo.EXPECT().GetUsersByRequest(ctx, &entity.GetUserListRequest{GuestOnly: true, Page: 1}).
-			Return(validUsers, nil).Times(1)
+		validUser := &databaseentity.User{
+			ID:      2,
+			Email:   config.GuestEmail,
+			IsGuest: true,
+		}
+		authRepo.EXPECT().DoUserLogin(ctx, &payloadentity.AttemptLoginPayload{
+			Email:    config.GuestEmail,
+			Password: config.GuestPassword,
+		}).Return(validUser, nil).Times(1)
 
 		res, err := uc.AttemptGuestLogin(ctx)
 		assert.Nil(t, err)
-		assert.Equal(t, validUsers[0], res)
+		assert.Equal(t, validUser, res)
 	})
 
-	t.Run("no guest users", func(t *testing.T) {
-		uc, userRepo := initUsecase(ctrl, config.Config{EnableGuestLogin: true})
+	t.Run("not guest users", func(t *testing.T) {
+		uc, authRepo := initUsecase(ctrl, config.InitTestConfig(map[string]string{"ENABLE_GUEST_LOGIN": "true"}))
 
-		userRepo.EXPECT().GetUsersByRequest(ctx, &entity.GetUserListRequest{GuestOnly: true, Page: 1}).
-			Return(nil, nil).Times(1)
+		validUser := &databaseentity.User{
+			ID:    2,
+			Email: config.GuestEmail,
+		}
+		authRepo.EXPECT().DoUserLogin(ctx, &payloadentity.AttemptLoginPayload{
+			Email:    config.GuestEmail,
+			Password: config.GuestPassword,
+		}).Return(validUser, nil).Times(1)
 
 		res, err := uc.AttemptGuestLogin(ctx)
 		assert.Nil(t, res)
 		assert.NotNil(t, err)
 		herr, ok := err.(*echo.HTTPError)
 		assert.True(t, ok)
-		assert.Equal(t, http.StatusNotFound, herr.Code)
+		assert.Equal(t, http.StatusUnauthorized, herr.Code)
+		assert.Equal(t, entity.NonGuestAttemptGuestLogin, herr.Internal.(*entity.InternalError).Code)
 	})
 
 	t.Run("disable guest", func(t *testing.T) {
-		uc, _ := initUsecase(ctrl, config.Config{EnableGuestLogin: false})
+		uc, _ := initUsecase(ctrl, config.InitTestConfig(map[string]string{"ENABLE_GUEST_LOGIN": "false"}))
 
-		_, err := uc.AttemptGuestLogin(ctx)
+		res, err := uc.AttemptGuestLogin(ctx)
+		assert.Nil(t, res)
 		assert.NotNil(t, err)
 		herr, ok := err.(*echo.HTTPError)
 		assert.True(t, ok)
 		assert.Equal(t, http.StatusForbidden, herr.Code)
+		assert.Equal(t, entity.AttemptGuestLoginForbidden, herr.Internal.(*entity.InternalError).Code)
 	})
 
 }
 
 func Test_GenerateJwtToken(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	cfg := config.Config{
-		JwtSecret:              "secret",
-		JwtExpirationInMinutes: 2,
-		JwtRememberInDays:      2,
-	}
+	cfg := config.InitTestConfig(map[string]string{
+		"JWT_SECRET":                "secret",
+		"JWT_EXPIRATION_IN_MINUTES": "2",
+		"JWT_REMEMBER_IN_DAYS":      "2",
+	})
 	uc, _ := initUsecase(ctrl, cfg)
 	ctx := context.Background()
 	t.Run("success, short time token session", func(t *testing.T) {
-		exp := time.Now().Add(time.Minute * time.Duration(cfg.JwtExpirationInMinutes)).Unix()
+		exp := time.Now().Add(time.Minute * time.Duration(cfg.JwtExpirationInMinutes())).Unix()
 
-		tokenStr, err := uc.GenerateJwtToken(ctx, &entity.User{
+		tokenStr, err := uc.GenerateJwtToken(ctx, &databaseentity.User{
 			ID:       1,
 			Username: "gendutski",
 			Email:    "mvp.firman.darmawan@gmail.com",
@@ -180,7 +164,7 @@ func Test_GenerateJwtToken(t *testing.T) {
 		// parse token
 		claims := jwt.MapClaims{}
 		jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
-			return []byte(cfg.JwtSecret), nil
+			return []byte(cfg.JwtSecret()), nil
 		})
 		assert.Equal(t, float64(1), claims["id"])
 		assert.Equal(t, "gendutski", claims["userName"])
@@ -189,8 +173,8 @@ func Test_GenerateJwtToken(t *testing.T) {
 	})
 
 	t.Run("success, long time token session", func(t *testing.T) {
-		exp := time.Now().Add(time.Hour * 24 * time.Duration(cfg.JwtRememberInDays))
-		tokenStr, err := uc.GenerateJwtToken(ctx, &entity.User{
+		exp := time.Now().Add(time.Hour * 24 * time.Duration(cfg.JwtRememberInDays()))
+		tokenStr, err := uc.GenerateJwtToken(ctx, &databaseentity.User{
 			ID:       1,
 			Username: "gendutski",
 			Email:    "mvp.firman.darmawan@gmail.com",
@@ -201,7 +185,7 @@ func Test_GenerateJwtToken(t *testing.T) {
 		// parse token
 		claims := jwt.MapClaims{}
 		jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
-			return []byte(cfg.JwtSecret), nil
+			return []byte(cfg.JwtSecret()), nil
 		})
 		assert.Equal(t, float64(1), claims["id"])
 		assert.Equal(t, "gendutski", claims["userName"])
@@ -212,15 +196,15 @@ func Test_GenerateJwtToken(t *testing.T) {
 
 func Test_ValidateJwtToken(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	uc, userRepo := initUsecase(ctrl, config.Config{})
+	uc, authRepo := initUsecase(ctrl, &config.Config{})
 	ctx := context.Background()
 
-	validUser := &entity.User{
+	validUser := &databaseentity.User{
 		ID:       1,
 		Username: "gendutski",
 		Email:    "gendutski@gmail.com",
 	}
-	validGuest := &entity.User{
+	validGuest := &databaseentity.User{
 		ID:       2,
 		Username: "guest",
 		Email:    "guest@gmail.com",
@@ -228,7 +212,7 @@ func Test_ValidateJwtToken(t *testing.T) {
 	}
 
 	t.Run("success guest", func(t *testing.T) {
-		userRepo.EXPECT().GetUserByField(ctx, "id", 2, http.StatusUnauthorized).Return(validGuest, nil).Times(1)
+		authRepo.EXPECT().GetUserByEmail(ctx, "guest@gmail.com").Return(validGuest, nil).Times(1)
 
 		res, err := uc.ValidateJwtToken(ctx, jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"id":       2,
@@ -241,7 +225,7 @@ func Test_ValidateJwtToken(t *testing.T) {
 	})
 
 	t.Run("success non guest", func(t *testing.T) {
-		userRepo.EXPECT().GetUserByField(ctx, "id", 1, http.StatusUnauthorized).Return(validUser, nil).Times(1)
+		authRepo.EXPECT().GetUserByEmail(ctx, "gendutski@gmail.com").Return(validUser, nil).Times(1)
 
 		res, err := uc.ValidateJwtToken(ctx, jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"id":       1,
@@ -254,11 +238,11 @@ func Test_ValidateJwtToken(t *testing.T) {
 	})
 
 	t.Run("token not match", func(t *testing.T) {
-		userRepo.EXPECT().GetUserByField(ctx, "id", 1, http.StatusUnauthorized).Return(validUser, nil).Times(1)
+		authRepo.EXPECT().GetUserByEmail(ctx, "guest@gmail.com").Return(validGuest, nil).Times(1)
 
 		_, err := uc.ValidateJwtToken(ctx, jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"id":       1,
-			"userName": "guest",
+			"userName": "gendutski",
 			"email":    "guest@gmail.com",
 			"exp":      time.Now().Add(time.Hour).Unix(),
 		}), true)
@@ -266,10 +250,11 @@ func Test_ValidateJwtToken(t *testing.T) {
 		herr, ok := err.(*echo.HTTPError)
 		assert.True(t, ok)
 		assert.Equal(t, http.StatusUnauthorized, herr.Code)
+		assert.Equal(t, entity.ValidateTokenFailed, herr.Internal.(*entity.InternalError).Code)
 	})
 
 	t.Run("guest forbid", func(t *testing.T) {
-		userRepo.EXPECT().GetUserByField(ctx, "id", 2, http.StatusUnauthorized).Return(validGuest, nil).Times(1)
+		authRepo.EXPECT().GetUserByEmail(ctx, "guest@gmail.com").Return(validGuest, nil).Times(1)
 
 		_, err := uc.ValidateJwtToken(ctx, jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"id":       2,
@@ -281,65 +266,240 @@ func Test_ValidateJwtToken(t *testing.T) {
 		herr, ok := err.(*echo.HTTPError)
 		assert.True(t, ok)
 		assert.Equal(t, http.StatusForbidden, herr.Code)
+		assert.Equal(t, entity.GuestTokenForbidden, herr.Internal.(*entity.InternalError).Code)
 	})
 }
 
 func Test_RenewPassword(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	uc, userRepo := initUsecase(ctrl, config.Config{})
+	uc, authRepo := initUsecase(ctrl, &config.Config{})
 	ctx := context.Background()
 
 	oldPassword := "0LdF4s#ionP455W0rd"
 	encrypted, _ := helper.EncryptPassword(oldPassword)
 
+	user := &databaseentity.User{
+		ID:                 1,
+		Username:           "gendutski",
+		Password:           encrypted,
+		PasswordMustChange: true,
+	}
+
 	t.Run("success", func(t *testing.T) {
-		user := entity.User{
-			ID:                 1,
-			Username:           "gendutski",
-			Password:           encrypted,
-			PasswordMustChange: true,
-		}
-
 		pass := "Tr!al123#"
-		userRepo.EXPECT().Update(ctx, gomock.Any()).Return(nil).Times(1)
-
-		err := uc.RenewPassword(ctx, &user, &entity.RenewPasswordPayload{
+		payload := &payloadentity.RenewPasswordPayload{
 			Password:        pass,
 			ConfirmPassword: pass,
-		})
+		}
+		authRepo.EXPECT().DoRenewPassword(ctx, user, payload).Return(nil).Times(1)
+
+		err := uc.RenewPassword(ctx, user, payload)
 		assert.Nil(t, err)
-		assert.True(t, helper.ValidateEncryptedPassword(user.Password, pass))
-		assert.False(t, user.PasswordMustChange)
 	})
 
-	t.Run("failed, password not match", func(t *testing.T) {
-		user := entity.User{
-			ID:                 1,
-			Username:           "gendutski",
-			Password:           encrypted,
-			PasswordMustChange: true,
-		}
+	t.Run("payload empty", func(t *testing.T) {
+		err := uc.RenewPassword(ctx, user, &payloadentity.RenewPasswordPayload{})
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, herr.Code)
+		assert.Equal(t, map[string][]*entity.ValidatorMessage{
+			"password":        {{Tag: "required"}},
+			"confirmPassword": {{Tag: "required"}},
+		}, herr.Message)
+		assert.Equal(t, entity.ValidatorBadRequest, herr.Internal.(*entity.InternalError).Code)
+	})
 
-		pass := "Tr!al123#"
-		err := uc.RenewPassword(ctx, &user, &entity.RenewPasswordPayload{
-			Password:        pass,
-			ConfirmPassword: "password",
+	t.Run("payload password not match", func(t *testing.T) {
+		err := uc.RenewPassword(ctx, user, &payloadentity.RenewPasswordPayload{
+			Password:        "trial123",
+			ConfirmPassword: "Trial123",
 		})
 		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, herr.Code)
+		assert.Equal(t, map[string][]*entity.ValidatorMessage{
+			"confirmPassword": {{Tag: "eqfield", Param: "Password"}},
+		}, herr.Message)
+		assert.Equal(t, entity.ValidatorBadRequest, herr.Internal.(*entity.InternalError).Code)
 	})
 
 	t.Run("failed, password not changed", func(t *testing.T) {
-		user := entity.User{
-			ID:                 1,
-			Username:           "gendutski",
-			Password:           encrypted,
-			PasswordMustChange: true,
-		}
-
-		err := uc.RenewPassword(ctx, &user, &entity.RenewPasswordPayload{
+		err := uc.RenewPassword(ctx, user, &payloadentity.RenewPasswordPayload{
 			Password:        oldPassword,
 			ConfirmPassword: oldPassword,
 		})
 		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, herr.Code)
+		assert.Equal(t, entity.RenewPasswordWithUnchangedPassword, herr.Internal.(*entity.InternalError).Code)
+	})
+}
+
+func Test_RequestResetPassword(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	uc, authRepo := initUsecase(ctrl, &config.Config{})
+	ctx := context.Background()
+
+	validUser := &databaseentity.User{
+		Email:              "gendutski@gmail.com",
+		PasswordMustChange: true,
+	}
+	validToken := &databaseentity.PasswordResetToken{
+		Token: "token",
+	}
+
+	t.Run("success", func(t *testing.T) {
+		payload := &payloadentity.RequestResetPayload{Email: "gendutski@gmail.com"}
+		authRepo.EXPECT().GetUserByEmail(ctx, "gendutski@gmail.com").Return(validUser, nil).Times(1)
+		authRepo.EXPECT().GenerateUserResetPassword(ctx, payload).Return(validToken, nil).Times(1)
+
+		user, token, err := uc.RequestResetPassword(ctx, payload)
+		assert.Nil(t, err)
+		assert.Equal(t, validToken, token)
+		assert.Equal(t, validUser, user)
+	})
+
+	t.Run("token failed", func(t *testing.T) {
+		payload := &payloadentity.RequestResetPayload{Email: "gendutski@gmail.com"}
+		authRepo.EXPECT().GetUserByEmail(ctx, "gendutski@gmail.com").Return(validUser, nil).Times(1)
+		authRepo.EXPECT().GenerateUserResetPassword(ctx, payload).Return(nil, errors.New("accident happen")).Times(1)
+
+		user, token, err := uc.RequestResetPassword(ctx, payload)
+		assert.NotNil(t, err)
+		assert.Nil(t, token)
+		assert.Nil(t, user)
+	})
+
+	t.Run("user failed", func(t *testing.T) {
+		payload := &payloadentity.RequestResetPayload{Email: "gendutski@gmail.com"}
+		authRepo.EXPECT().GetUserByEmail(ctx, "gendutski@gmail.com").Return(nil, errors.New("user not found")).Times(1)
+
+		user, token, err := uc.RequestResetPassword(ctx, payload)
+		assert.NotNil(t, err)
+		assert.Nil(t, token)
+		assert.Nil(t, user)
+	})
+
+	t.Run("paylod not valid", func(t *testing.T) {
+		payload := &payloadentity.RequestResetPayload{Email: "gendutski.com"}
+
+		_, _, err := uc.RequestResetPassword(ctx, payload)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, herr.Code)
+		assert.Equal(t, entity.ValidatorBadRequest, herr.Internal.(*entity.InternalError).Code)
+	})
+}
+
+func Test_ValidateResetToken(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	uc, authRepo := initUsecase(ctrl, &config.Config{})
+	ctx := context.Background()
+
+	t.Run("success", func(t *testing.T) {
+		payload := &payloadentity.ValidateResetTokenPayload{
+			Email: "gendutski@gmail.com",
+			Token: "token",
+		}
+		authRepo.EXPECT().ValidateResetToken(ctx, payload).Return(nil, nil).Times(1)
+
+		err := uc.ValidateResetToken(ctx, payload)
+		assert.Nil(t, err)
+	})
+
+	t.Run("validator failed", func(t *testing.T) {
+		payload := &payloadentity.ValidateResetTokenPayload{
+			Email: "gendutski.com",
+			Token: "token",
+		}
+
+		err := uc.ValidateResetToken(ctx, payload)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, herr.Code)
+		assert.Equal(t, entity.ValidatorBadRequest, herr.Internal.(*entity.InternalError).Code)
+	})
+}
+
+func Test_SubmitResetPassword(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	uc, authRepo := initUsecase(ctrl, &config.Config{})
+	ctx := context.Background()
+
+	t.Run("success", func(t *testing.T) {
+		payloadToken := &payloadentity.ValidateResetTokenPayload{
+			Email: "gendutski@gmail.com",
+			Token: "token",
+		}
+		payload := &payloadentity.ResetPasswordPayload{
+			TokenEmail:      payloadToken,
+			Password:        "new password",
+			ConfirmPassword: "new password",
+		}
+		token := &databaseentity.PasswordResetToken{
+			Token: "token",
+		}
+		validUser := &databaseentity.User{
+			Email: "gendutski@gmail.com",
+		}
+
+		authRepo.EXPECT().ValidateResetToken(ctx, payloadToken).Return(token, nil).Times(1)
+		authRepo.EXPECT().GetUserByEmail(ctx, "gendutski@gmail.com").Return(validUser, nil).Times(1)
+		authRepo.EXPECT().DoResetPassword(ctx, gomock.Any(), &databaseentity.PasswordResetToken{}).Return(nil).Times(1)
+
+		_, err := uc.SubmitResetPassword(ctx, payload)
+		assert.Nil(t, err)
+		assert.Empty(t, token.Email)
+	})
+
+	t.Run("validator empty struct", func(t *testing.T) {
+		payload := &payloadentity.ResetPasswordPayload{}
+
+		_, err := uc.SubmitResetPassword(ctx, payload)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, herr.Code)
+		assert.Equal(t, entity.ValidatorBadRequest, herr.Internal.(*entity.InternalError).Code)
+	})
+
+	t.Run("validator empty TokenEmail struct", func(t *testing.T) {
+		payload := &payloadentity.ResetPasswordPayload{
+			Password:        "new password",
+			ConfirmPassword: "new password",
+		}
+
+		_, err := uc.SubmitResetPassword(ctx, payload)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, herr.Code)
+		assert.Equal(t, entity.ValidatorBadRequest, herr.Internal.(*entity.InternalError).Code)
+	})
+
+	t.Run("validator TokenEmail struct not valid", func(t *testing.T) {
+		payload := &payloadentity.ResetPasswordPayload{
+			TokenEmail: &payloadentity.ValidateResetTokenPayload{
+				Email: "gendutski.com",
+				Token: "token",
+			},
+			Password:        "new password",
+			ConfirmPassword: "new password",
+		}
+
+		_, err := uc.SubmitResetPassword(ctx, payload)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, herr.Code)
+		assert.Equal(t, entity.ValidatorBadRequest, herr.Internal.(*entity.InternalError).Code)
+		assert.Equal(t, map[string][]*entity.ValidatorMessage{
+			"email": {{Tag: "email"}},
+		}, herr.Message)
 	})
 }

@@ -49,7 +49,9 @@ func SetAPIRoute(e *echo.Echo, h *APIHandler) {
 
 func (h *APIHandler) setAuthAPI(apiGroup *echo.Group, nonGuestOnly []echo.MiddlewareFunc) {
 	// non login routes
-	apiGroup.POST("/login", h.AuthAPI.Login)
+	apiGroup.POST("/login", h.AuthAPI.Login).Name = entity.ApiLoginRouteName
+	// guest login if enabled
+	apiGroup.POST("/guet-login", h.AuthAPI.GuestLogin).Name = entity.ApiGuestLoginRouteName
 	// renew password routes
 	apiGroup.PUT("/user/renew-password", h.AuthAPI.RenewPassword, nonGuestOnly[:2]...)
 }

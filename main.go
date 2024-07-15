@@ -5,14 +5,16 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"rap-c/app/entity"
+	databaseentity "rap-c/app/entity/database-entity"
 	"rap-c/app/handler/api"
 	"rap-c/app/handler/middleware"
 	"rap-c/app/handler/web"
 	"rap-c/app/helper"
+	authrepository "rap-c/app/repository/mysql/auth-repository"
 	userrepository "rap-c/app/repository/mysql/user-repository"
 	authusecase "rap-c/app/usecase/auth-usecase"
 	mailusecase "rap-c/app/usecase/mail-usecase"
+	sessionusecase "rap-c/app/usecase/session-usecase"
 	userusecase "rap-c/app/usecase/user-usecase"
 	"rap-c/config"
 	"rap-c/route"
@@ -39,35 +41,37 @@ func main() {
 
 func serve() {
 	// load config & connect db
-	cfg := config.GetConfig()
-	db := config.Connect()
+	cfg := config.InitConfig()
+	db := cfg.ConnectDB()
 
 	// auto migrate db
-	migrateDB(db, cfg.EnableGuestLogin)
+	migrateDB(cfg, db)
 
 	// load mysql repositories
+	authRepo := authrepository.New(db)
 	userRepo := userrepository.New(db)
 
+	// load session store
+	sessionStore := sessions.NewCookieStore([]byte(cfg.SessionKey()))
+
 	// load modules
-	authUsecase := authusecase.NewUsecase(cfg, userRepo)
+	authUsecase := authusecase.NewUsecase(cfg, authRepo)
 	userUsecase := userusecase.NewUsecase(cfg, userRepo)
 	mailUsecase := mailusecase.NewUsecase(cfg)
+	sessionUsecase := sessionusecase.NewUsecase(cfg, sessionStore, authUsecase)
 
 	// load api handler
 	authAPI := api.NewAuthHandler(cfg, authUsecase, mailUsecase)
 	userAPI := api.NewUserHandler(cfg, userUsecase, mailUsecase)
 
-	// load session store
-	sessionStore := sessions.NewCookieStore([]byte(cfg.SessionKey))
-
 	// load web handler
-	authWeb := web.NewAuthPage(cfg, sessionStore, authUsecase, mailUsecase)
+	authWeb := web.NewAuthPage(cfg, sessionStore, authUsecase, sessionUsecase, mailUsecase)
 	userWeb := web.NewUserPage(cfg, sessionStore, userUsecase, mailUsecase)
 
 	// init echo
 	e := echo.New()
 
-	e.Debug = cfg.EnableDebug
+	e.Debug = cfg.EnableDebug()
 	// custom http error handler
 	e.HTTPErrorHandler = func(err error, c echo.Context) {
 		reg := regexp.MustCompile("^" + route.ApiGroup)
@@ -78,7 +82,7 @@ func serve() {
 		}
 	}
 	// set general middleware
-	e.Use(middleware.SetLog(cfg.LogMode, cfg.EnableWarnFileLog))
+	e.Use(middleware.SetLog(cfg.LogMode(), cfg.EnableWarnFileLog()))
 	e.Use(echomiddleware.Recover())
 	e.Use(echomiddleware.TimeoutWithConfig(echomiddleware.TimeoutConfig{
 		ErrorMessage: "request timeout",
@@ -87,57 +91,55 @@ func serve() {
 
 	// set API route
 	route.SetAPIRoute(e, &route.APIHandler{
-		JwtUserContextKey: cfg.JwtUserContextKey,
-		JwtSecret:         cfg.JwtSecret,
-		GuestAccepted:     cfg.EnableGuestLogin,
-		AuthUsecase:       authUsecase,
-		AuthAPI:           authAPI,
-		UserAPI:           userAPI,
+		JwtSecret:     cfg.JwtSecret(),
+		GuestAccepted: cfg.EnableGuestLogin(),
+		AuthUsecase:   authUsecase,
+		AuthAPI:       authAPI,
+		UserAPI:       userAPI,
 	})
 	// set web page route
 	route.SetWebRoute(e, &route.WebHandler{
-		JwtUserContextKey: cfg.JwtUserContextKey,
-		JwtSecret:         cfg.JwtSecret,
-		GuestAccepted:     cfg.EnableGuestLogin,
-		AuthUsecase:       authUsecase,
-		Store:             sessionStore,
-		UserPage:          userWeb,
-		AuthPage:          authWeb,
+		JwtSecret:     cfg.JwtSecret(),
+		GuestAccepted: cfg.EnableGuestLogin(),
+		AuthUsecase:   authUsecase,
+		Store:         sessionStore,
+		UserPage:      userWeb,
+		AuthPage:      authWeb,
 	})
 
 	// set template renderer
 	var err error
-	e.Renderer, err = config.NewRenderer(cfg.AutoReloadTemplate)
+	e.Renderer, err = config.NewRenderer(cfg.AutoReloadTemplate())
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// run server
-	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", cfg.Port)))
+	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", cfg.Port())))
 }
 
-func migrateDB(db *gorm.DB, enableGuestLogin bool) {
+func migrateDB(cfg *config.Config, db *gorm.DB) {
 	start := time.Now()
 
 	// migrate tables
 	log.Println("Start migrate db")
-	db.AutoMigrate(&entity.User{})
-	db.AutoMigrate(&entity.PasswordResetToken{})
-	db.AutoMigrate(&entity.Unit{})
-	db.AutoMigrate(&entity.Ingredient{})
-	db.AutoMigrate(&entity.IngredientConvertionUnit{})
-	db.AutoMigrate(&entity.Recipe{})
-	db.AutoMigrate(&entity.RecipeIngredient{})
-	db.AutoMigrate(&entity.StockMovement{})
-	db.AutoMigrate(&entity.Product{})
-	db.AutoMigrate(&entity.Account{})
-	db.AutoMigrate(&entity.Transaction{})
+	db.AutoMigrate(&databaseentity.User{})
+	db.AutoMigrate(&databaseentity.PasswordResetToken{})
+	db.AutoMigrate(&databaseentity.Unit{})
+	db.AutoMigrate(&databaseentity.Ingredient{})
+	db.AutoMigrate(&databaseentity.IngredientConvertionUnit{})
+	db.AutoMigrate(&databaseentity.Recipe{})
+	db.AutoMigrate(&databaseentity.RecipeIngredient{})
+	db.AutoMigrate(&databaseentity.StockMovement{})
+	db.AutoMigrate(&databaseentity.Product{})
+	db.AutoMigrate(&databaseentity.Account{})
+	db.AutoMigrate(&databaseentity.Transaction{})
 	log.Printf("Migrate done in %v", time.Since(start))
 
 	// check non guest user
 	log.Println("Check non guest user")
 	var totalNonGuestUser int64
-	err := db.Model(entity.User{}).Where("is_guest = ? and disabled = ?", false, false).Count(&totalNonGuestUser).Error
+	err := db.Model(databaseentity.User{}).Where("is_guest = ? and disabled = ?", false, false).Count(&totalNonGuestUser).Error
 	if err != nil {
 		fmt.Println("Error get total non guest user:", err)
 		os.Exit(1)
@@ -145,16 +147,15 @@ func migrateDB(db *gorm.DB, enableGuestLogin bool) {
 	// create non guest user
 	if totalNonGuestUser < 1 {
 		log.Println("Create first non guest user")
-		firstUser := config.GetFirstUser()
-		pass, err := helper.EncryptPassword(firstUser.Password)
+		pass, err := helper.EncryptPassword(cfg.FirstUserPassword())
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		user := entity.User{
-			Username:           firstUser.Username,
-			FullName:           firstUser.FullName,
-			Email:              firstUser.Email,
+		user := databaseentity.User{
+			Username:           cfg.FirstUserUsername(),
+			FullName:           cfg.FirstUserFullName(),
+			Email:              cfg.FirstUserEmail(),
 			Password:           pass,
 			PasswordMustChange: true,
 			CreatedBy:          config.SystemUsername,
@@ -168,10 +169,10 @@ func migrateDB(db *gorm.DB, enableGuestLogin bool) {
 	}
 
 	// auto create guest user
-	if enableGuestLogin {
+	if cfg.EnableGuestLogin() {
 		log.Println("Check guest user")
 		var totalGuestUser int64
-		err = db.Model(entity.User{}).Where("is_guest = ?", true).Count(&totalGuestUser).Error
+		err = db.Model(databaseentity.User{}).Where("is_guest = ?", true).Count(&totalGuestUser).Error
 		if err != nil {
 			fmt.Println("Error get total guest user:", err)
 			os.Exit(1)
@@ -185,7 +186,7 @@ func migrateDB(db *gorm.DB, enableGuestLogin bool) {
 				fmt.Println(err)
 				os.Exit(1)
 			}
-			user := entity.User{
+			user := databaseentity.User{
 				Username:  config.GuestUsername,
 				FullName:  config.GuestUsername,
 				Email:     config.GuestEmail,

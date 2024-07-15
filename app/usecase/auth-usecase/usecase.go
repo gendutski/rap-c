@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 	"rap-c/app/entity"
+	databaseentity "rap-c/app/entity/database-entity"
+	payloadentity "rap-c/app/entity/payload-entity"
 	"rap-c/app/helper"
 	"rap-c/app/repository/contract"
 	usecasecontract "rap-c/app/usecase/contract"
@@ -11,7 +13,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 )
 
@@ -21,81 +22,61 @@ const (
 	tokenStrEmail string = "email"
 )
 
-func NewUsecase(cfg config.Config, userRepo contract.UserRepository) usecasecontract.AuthUsecase {
-	return &usecase{cfg, userRepo}
+func NewUsecase(cfg *config.Config, authRepo contract.AuthRepository) usecasecontract.AuthUsecase {
+	return &usecase{cfg, authRepo}
 }
 
 type usecase struct {
-	cfg      config.Config
-	userRepo contract.UserRepository
+	cfg      *config.Config
+	authRepo contract.AuthRepository
 }
 
-func (uc *usecase) AttemptLogin(ctx context.Context, payload *entity.AttemptLoginPayload) (*entity.User, error) {
+func (uc *usecase) AttemptLogin(ctx context.Context, payload *payloadentity.AttemptLoginPayload) (*databaseentity.User, error) {
 	// validate payload
-	validate := helper.GenerateStructValidator()
-	errMessages := payload.Validate(validate)
-	if len(errMessages) > 0 {
-		return nil, &echo.HTTPError{
-			Code:     http.StatusBadRequest,
-			Message:  errMessages,
-			Internal: entity.NewInternalError(entity.ValidatorNotValid, errMessages...),
-		}
-	}
-
-	// get user by email
-	user, err := uc.userRepo.GetUserByField(ctx, "email", payload.Email, http.StatusBadRequest)
+	err := entity.InitValidator().Validate(payload)
 	if err != nil {
 		return nil, err
 	}
 
-	// check user status
-	if user.Disabled {
+	// do login
+	user, err := uc.authRepo.DoUserLogin(ctx, payload)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (uc *usecase) AttemptGuestLogin(ctx context.Context) (*databaseentity.User, error) {
+	if !uc.cfg.EnableGuestLogin() {
 		return nil, &echo.HTTPError{
-			Code:     http.StatusBadRequest,
-			Message:  entity.UserUsecaseAttemptLoginDisableUserMessage,
-			Internal: entity.NewInternalError(entity.UserUsecaseAttemptLoginDisableUser, entity.UserUsecaseAttemptLoginDisableUserMessage),
+			Code:     http.StatusForbidden,
+			Message:  entity.AttemptGuestLoginForbiddenMessage,
+			Internal: entity.NewInternalError(entity.AttemptGuestLoginForbidden, entity.AttemptGuestLoginForbiddenMessage),
 		}
 	}
-
-	// validate password
-	if !helper.ValidateEncryptedPassword(user.Password, payload.Password) {
+	user, err := uc.authRepo.DoUserLogin(ctx, &payloadentity.AttemptLoginPayload{
+		Email:    config.GuestEmail,
+		Password: config.GuestPassword,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !user.IsGuest {
 		return nil, &echo.HTTPError{
-			Code:     http.StatusBadRequest,
-			Message:  entity.UserusecaseAttemptLoginIncorrectPasswordMessage,
-			Internal: entity.NewInternalError(entity.UserusecaseAttemptLogigIncorrectPassword, entity.UserusecaseAttemptLoginIncorrectPasswordMessage),
+			Code:     http.StatusUnauthorized,
+			Message:  entity.NonGuestAttemptGuestLoginMessage,
+			Internal: entity.NewInternalError(entity.NonGuestAttemptGuestLogin, entity.NonGuestAttemptGuestLoginMessage),
 		}
 	}
 
 	return user, nil
 }
 
-func (uc *usecase) AttemptGuestLogin(ctx context.Context) (*entity.User, error) {
-	if !uc.cfg.EnableGuestLogin {
-		return nil, &echo.HTTPError{
-			Code:     http.StatusForbidden,
-			Message:  entity.UserUsecaseAttemptGuestLoginDisabledMessage,
-			Internal: entity.NewInternalError(entity.UserUsecaseAttemptGuestLoginDisabled, entity.UserUsecaseAttemptGuestLoginDisabledMessage),
-		}
-	}
-	users, err := uc.userRepo.GetUsersByRequest(ctx, &entity.GetUserListRequest{GuestOnly: true, Page: 1})
-	if err != nil {
-		return nil, err
-	}
-	if len(users) == 0 {
-		return nil, &echo.HTTPError{
-			Code:     http.StatusNotFound,
-			Message:  entity.UserUsecaseAttemptGuestLoginNotFoundMessage,
-			Internal: entity.NewInternalError(entity.UserUsecaseAttemptGuestLoginNotFound, entity.UserUsecaseAttemptGuestLoginNotFoundMessage),
-		}
-	}
-	return users[0], nil
-}
-
-func (uc *usecase) GenerateJwtToken(ctx context.Context, user *entity.User, isLongSession bool) (string, error) {
-	exp := time.Now().Add(time.Minute * time.Duration(uc.cfg.JwtExpirationInMinutes)).Unix()
+func (uc *usecase) GenerateJwtToken(ctx context.Context, user *databaseentity.User, isLongSession bool) (string, error) {
+	exp := time.Now().Add(time.Minute * time.Duration(uc.cfg.JwtExpirationInMinutes())).Unix()
 	if isLongSession {
 		// long session for remember login session
-		exp = time.Now().Add(time.Hour * 24 * time.Duration(uc.cfg.JwtRememberInDays)).Unix()
+		exp = time.Now().Add(time.Hour * 24 * time.Duration(uc.cfg.JwtRememberInDays())).Unix()
 	}
 	claims := jwt.MapClaims{
 		tokenStrID:    user.ID,
@@ -105,112 +86,108 @@ func (uc *usecase) GenerateJwtToken(ctx context.Context, user *entity.User, isLo
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenStr, err := token.SignedString([]byte(uc.cfg.JwtSecret))
+	tokenStr, err := token.SignedString([]byte(uc.cfg.JwtSecret()))
 	if err != nil {
 		return "", &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
 			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.UserUsecaseGenerateJwtTokenError, err.Error()),
+			Internal: entity.NewInternalError(entity.AuthUsecaseGenerateJwtTokenError, err.Error()),
 		}
 	}
 	return tokenStr, nil
 }
 
-func (uc *usecase) ValidateJwtToken(ctx context.Context, token *jwt.Token, guestAccepted bool) (*entity.User, error) {
+func (uc *usecase) ValidateJwtToken(ctx context.Context, token *jwt.Token, guestAccepted bool) (*databaseentity.User, error) {
 	// get claims
 	claims, ok := token.Claims.(jwt.MapClaims) // by default claims is of type `jwt.MapClaims`
 	if !ok {
 		return nil, &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
 			Message:  http.StatusText(http.StatusInternalServerError),
-			Internal: entity.NewInternalError(entity.UserUsecaseValidateJwtTokenError, "failed to cast claims as jwt.MapClaims"),
+			Internal: entity.NewInternalError(entity.AuthUsecaseValidateJwtTokenError, "failed to cast claims as jwt.MapClaims"),
 		}
 	}
-	// get user from claims
-	return uc.getUserFromJwtClaims(ctx, claims, guestAccepted)
-}
 
-func (uc *usecase) ValidateSessionJwtToken(ctx context.Context, r *http.Request, w http.ResponseWriter, store sessions.Store, guestAccepted bool) (*entity.User, string, error) {
-	// get token from session
-	sess := entity.InitSession(r, w, store, entity.SessionID, uc.cfg.LogMode, uc.cfg.EnableWarnFileLog)
-	tokenStr, ok := sess.Get(entity.TokenSessionName).(string)
+	// get user
+	email, ok := claims[tokenStrEmail].(string)
 	if !ok {
-		message := "token not found in session"
-		return nil, "", &echo.HTTPError{
-			Code:     http.StatusUnauthorized,
-			Message:  message,
-			Internal: entity.NewInternalError(entity.UserUsecaseValidateSessionJwtTokenUnauthorized, message),
+		return nil, &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.AuthUsecaseValidateJwtTokenError, "jwt claims email not valid"),
 		}
 	}
-
-	// parse token
-	claims := jwt.MapClaims{}
-	token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
-		return []byte(uc.cfg.JwtSecret), nil
-	})
-	if err != nil || !token.Valid {
-		return nil, "", &echo.HTTPError{
-			Code:     http.StatusUnauthorized,
-			Message:  "parse token failed",
-			Internal: entity.NewInternalError(entity.UserUsecaseValidateSessionJwtTokenUnauthorized, err.Error()),
-		}
-	}
-
-	// get user from claims
-	user, err := uc.getUserFromJwtClaims(ctx, claims, guestAccepted)
+	user, err := uc.authRepo.GetUserByEmail(ctx, email)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
-	return user, tokenStr, nil
+
+	// check user
+	var validUserID bool
+	switch t := claims[tokenStrID].(type) {
+	case int:
+		validUserID = t == user.ID
+	case int64:
+		validUserID = t == int64(user.ID)
+	case float32:
+		validUserID = t == float32(user.ID)
+	case float64:
+		validUserID = t == float64(user.ID)
+	}
+	if user.Username != claims[tokenStrName].(string) || !validUserID || user.Disabled {
+		return nil, &echo.HTTPError{
+			Code:     http.StatusUnauthorized,
+			Message:  entity.ValidateTokenFailedMessage,
+			Internal: entity.NewInternalError(entity.ValidateTokenFailed, entity.ValidateTokenFailedMessage),
+		}
+	}
+
+	// if guest not accepted
+	if !guestAccepted && user.IsGuest {
+		return nil, &echo.HTTPError{
+			Code:     http.StatusForbidden,
+			Message:  entity.GuestTokenForbiddenMessage,
+			Internal: entity.NewInternalError(entity.GuestTokenForbidden, entity.GuestTokenForbiddenMessage),
+		}
+	}
+	return user, nil
 }
 
-func (uc *usecase) RenewPassword(ctx context.Context, user *entity.User, payload *entity.RenewPasswordPayload) error {
+func (uc *usecase) RenewPassword(ctx context.Context, user *databaseentity.User, payload *payloadentity.RenewPasswordPayload) error {
 	// validate payload
-	validate := helper.GenerateStructValidator()
-	errMessages := payload.Validate(validate)
-	if len(errMessages) > 0 {
-		return &echo.HTTPError{
-			Code:     http.StatusBadRequest,
-			Message:  errMessages,
-			Internal: entity.NewInternalError(entity.ValidatorNotValid, errMessages...),
-		}
+	err := entity.InitValidator().Validate(payload)
+	if err != nil {
+		return err
 	}
 
 	// check whether the new password is the same as the old password
 	if helper.ValidateEncryptedPassword(user.Password, payload.Password) {
 		return &echo.HTTPError{
 			Code:     http.StatusBadRequest,
-			Message:  entity.UserUsecaseRenewPasswordUnchangedMessage,
-			Internal: entity.NewInternalError(entity.UserUsecaseRenewPasswordUnchanged, entity.UserUsecaseRenewPasswordUnchangedMessage),
+			Message:  entity.RenewPasswordWithUnchangedPasswordMessage,
+			Internal: entity.NewInternalError(entity.RenewPasswordWithUnchangedPassword, entity.RenewPasswordWithUnchangedPasswordMessage),
 		}
 	}
 
-	// set new password
-	_, encryptedPass, err := uc.generateUserPassword(payload.Password)
-	if err != nil {
-		return err
-	}
-	user.Password = encryptedPass
-	user.PasswordMustChange = false
-	user.UpdatedBy = user.Username
-
-	// save
-	return uc.userRepo.Update(ctx, user)
+	// update
+	return uc.authRepo.DoRenewPassword(ctx, user, payload)
 }
 
-func (uc *usecase) RequestResetPassword(ctx context.Context, email string) (*entity.User, *entity.PasswordResetToken, error) {
-	if email == "" {
-		return nil, nil, echo.NewHTTPError(http.StatusBadRequest)
+func (uc *usecase) RequestResetPassword(ctx context.Context, payload *payloadentity.RequestResetPayload) (*databaseentity.User, *databaseentity.PasswordResetToken, error) {
+	// validate payload
+	err := entity.InitValidator().Validate(payload)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// check email
-	user, err := uc.userRepo.GetUserByField(ctx, "email", email, http.StatusBadRequest)
+	user, err := uc.authRepo.GetUserByEmail(ctx, payload.Email)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// generate reset password token
-	token, err := uc.userRepo.GenerateUserResetPassword(ctx, email)
+	token, err := uc.authRepo.GenerateUserResetPassword(ctx, payload)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -218,57 +195,46 @@ func (uc *usecase) RequestResetPassword(ctx context.Context, email string) (*ent
 	return user, token, nil
 }
 
-func (uc *usecase) ValidateResetPassword(ctx context.Context, email string, token string) error {
-	if email == "" || token == "" {
-		var errMessages []string
-		if email == "" {
-			errMessages = append(errMessages, "email is required")
-		}
-		if token == "" {
-			errMessages = append(errMessages, "token is required")
-		}
-
-		return &echo.HTTPError{
-			Code:     http.StatusBadRequest,
-			Message:  errMessages,
-			Internal: entity.NewInternalError(entity.ValidatorNotValid, errMessages...),
-		}
+func (uc *usecase) ValidateResetToken(ctx context.Context, payload *payloadentity.ValidateResetTokenPayload) error {
+	// validate payload
+	err := entity.InitValidator().Validate(payload)
+	if err != nil {
+		return err
 	}
-	_, err := uc.userRepo.ValidateResetToken(ctx, email, token)
+	_, err = uc.authRepo.ValidateResetToken(ctx, payload)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (uc *usecase) SubmitResetPassword(ctx context.Context, payload *entity.ResetPasswordPayload) (*entity.User, error) {
+func (uc *usecase) SubmitResetPassword(ctx context.Context, payload *payloadentity.ResetPasswordPayload) (*databaseentity.User, error) {
 	// validate payload
-	validate := helper.GenerateStructValidator()
-	errMessages := payload.Validate(validate)
-	if len(errMessages) > 0 {
-		return nil, &echo.HTTPError{
-			Code:     http.StatusBadRequest,
-			Message:  errMessages,
-			Internal: entity.NewInternalError(entity.ValidatorNotValid, errMessages...),
-		}
+	err := entity.InitValidator().Validate(payload)
+	if err != nil {
+		return nil, err
 	}
 
 	// get reset pasword data
-	reset, err := uc.userRepo.ValidateResetToken(ctx, payload.Email, payload.Token)
+	reset, err := uc.authRepo.ValidateResetToken(ctx, payload.TokenEmail)
 	if err != nil {
 		return nil, err
 	}
 
 	// get user
-	user, err := uc.userRepo.GetUserByField(ctx, "email", payload.Email, http.StatusNotFound)
+	user, err := uc.authRepo.GetUserByEmail(ctx, payload.TokenEmail.Email)
 	if err != nil {
 		return nil, err
 	}
 
 	// encrypt password
-	_, encryptPass, err := uc.generateUserPassword(payload.Password)
+	encryptPass, err := helper.EncryptPassword(payload.Password)
 	if err != nil {
-		return nil, err
+		return nil, &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.HelperEncryptPasswordError, err.Error()),
+		}
 	}
 
 	// update user
@@ -279,7 +245,7 @@ func (uc *usecase) SubmitResetPassword(ctx context.Context, payload *entity.Rese
 	reset.Token = ""
 
 	// save
-	err = uc.userRepo.ResetPassword(ctx, user, reset)
+	err = uc.authRepo.DoResetPassword(ctx, user, reset)
 	if err != nil {
 		return nil, err
 	}

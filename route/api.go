@@ -47,6 +47,8 @@ func (h *APIHandler) setAuthAPI(e *echo.Echo, nonGuestOnly []echo.MiddlewareFunc
 	e.Add(h.Route.GuestLoginAPI.Method(), h.Route.GuestLoginAPI.Path(), h.AuthAPI.GuestLogin)
 	// renew password routes
 	e.Add(h.Route.PasswordMustChangeAPI.Method(), h.Route.PasswordMustChangeAPI.Path(), h.AuthAPI.RenewPassword, nonGuestOnly[:2]...)
+	// forgot password (request reset password)
+	e.Add(h.Route.RequestResetPasswordAPI.Method(), h.Route.RequestResetPasswordAPI.Path(), h.AuthAPI.RequestResetPassword)
 }
 
 func (h *APIHandler) setUserAPI(e *echo.Echo, allLoginRole []echo.MiddlewareFunc, nonGuestOnly []echo.MiddlewareFunc) {

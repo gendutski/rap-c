@@ -62,6 +62,8 @@ func (h *WebHandler) setAuthWebPage(e *echo.Echo) {
 	e.Add(h.Route.SubmitTokenSessionWebPage.Method(), h.Route.SubmitTokenSessionWebPage.Path(), h.AuthPage.SubmitToken)
 	// logout
 	e.Add(h.Route.LogoutWebPage.Method(), h.Route.LogoutWebPage.Path(), h.AuthPage.Logout)
+	// forgot password
+	e.Add(h.Route.ForgotPasswordWebPage.Method(), h.Route.ForgotPasswordWebPage.Path(), h.AuthPage.ForgotPassword)
 
 	// // reset password
 	// e.GET(entity.WebRequestResetPath, h.AuthPage.RequestResetPassword)

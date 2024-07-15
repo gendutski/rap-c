@@ -19,8 +19,8 @@ type AuthPage interface {
 	Logout(e echo.Context) error
 	// password must change page
 	PasswordMustChange(e echo.Context) error
-	// // request reset password page
-	// RequestResetPassword(e echo.Context) error
+	// forgot password page
+	ForgotPassword(e echo.Context) error
 	// // reset password page
 	// ResetPassword(e echo.Context) error
 }
@@ -96,7 +96,7 @@ func (h *authHandler) Login(e echo.Context) error {
 		"loginFormAction":          h.cfg.URL(h.router.LoginAPI.Path()),
 		"submitTokenSessionMethod": h.router.SubmitTokenSessionWebPage.Method(),
 		"submitTokenSessionAction": h.cfg.URL(h.router.SubmitTokenSessionWebPage.Path()),
-		"resetPath":                h.router.ResetPasswordWebPage.Path(),
+		"forgotPasswordPath":       h.router.ForgotPasswordWebPage.Path(),
 	})
 }
 
@@ -154,44 +154,21 @@ func (h *authHandler) PasswordMustChange(e echo.Context) error {
 	})
 }
 
-// func (h *authHandler) RequestResetPassword(e echo.Context) error {
-// 	// init router
-// 	routeMap := helper.RouteMap(e.Echo().Routes())
-// 	authorizedPathRedirect := routeMap.Get(entity.DefaultAuthorizedRouteRedirect, "path")
+func (h *authHandler) ForgotPassword(e echo.Context) error {
+	// check if token session is exists and valid
+	_, _, err := h.sessionUsecase.ValidateJwtToken(e, h.cfg.EnableGuestLogin())
+	if err == nil {
+		return e.Redirect(http.StatusFound, h.router.DefaultAuthorizedWebPage(
+			h.sessionUsecase.GetPrevRoute(e),
+		).Path())
+	}
 
-// 	// check if token session is exists
-// 	ctx := e.Request().Context()
-// 	_, _, err := h.authUsecase.ValidateSessionJwtToken(ctx, e.Request(), e.Response(), h.store, h.cfg.EnableGuestLogin)
-// 	if err == nil {
-// 		return e.Redirect(http.StatusFound, authorizedPathRedirect)
-// 	}
-
-// 	// load session
-// 	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.LogMode, h.cfg.EnableWarnFileLog)
-
-// 	// get submit login error
-// 	var submitErr []string
-// 	var submitError []byte = []byte("[]")
-// 	if _submitErr := sess.Flash("error"); _submitErr != nil {
-// 		switch _val := _submitErr.(type) {
-// 		case []string:
-// 			submitErr = append(submitErr, _val...)
-// 		case string:
-// 			submitErr = append(submitErr, _val)
-// 		}
-// 	}
-// 	if len(submitErr) > 0 {
-// 		submitError, _ = json.Marshal(submitErr)
-// 	}
-
-// 	return e.Render(http.StatusOK, "request-reset.html", map[string]interface{}{
-// 		"enableGuest": h.cfg.EnableGuestLogin,
-// 		"loginError":  string(submitError),
-// 		"formMethod":  routeMap.Get(entity.PostRequestResetPasswordName, "method"),
-// 		"formAction":  routeMap.Get(entity.PostRequestResetPasswordName, "path"),
-// 		"loginPath":   routeMap.Get(entity.LoginRouteName, "path"),
-// 	})
-// }
+	return e.Render(http.StatusOK, "forgot-password.html", map[string]interface{}{
+		"formMethod": h.router.RequestResetPasswordAPI.Method(),
+		"formAction": h.router.RequestResetPasswordAPI.Path(),
+		"loginPath":  h.router.LoginWebPage.Path(),
+	})
+}
 
 // func (h *authHandler) ResetPassword(e echo.Context) error {
 // 	ctx := e.Request().Context()

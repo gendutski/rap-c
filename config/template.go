@@ -27,15 +27,15 @@ type Templates struct {
 
 func NewRenderer(autoReloadTemplate bool) (*Renderer, error) {
 	keys := map[string][][]string{
-		"401.html":            {{"401.html"}},
-		"404.html":            {{"404.html"}},
-		"error.html":          {{"error.html"}},
-		"login.html":          {{"login.html"}},
-		"pass-changer.html":   {{"pass-changer.html"}},
-		"request-reset.html":  {{"request-reset.html"}},
-		"reset-password.html": {{"reset-password.html"}},
-		"profile.html":        {{"layouts", "layout.html"}, {"layouts", "sidebar-menu.html"}, {"profile", "index.html"}},
-		"dashboard.html":      {{"layouts", "layout.html"}, {"layouts", "sidebar-menu.html"}, {"dashboard", "index.html"}},
+		"401.html":             {{"401.html"}},
+		"404.html":             {{"404.html"}},
+		"error.html":           {{"error.html"}},
+		"login.html":           {{"login.html"}},
+		"pass-changer.html":    {{"pass-changer.html"}},
+		"forgot-password.html": {{"forgot-password.html"}},
+		"reset-password.html":  {{"reset-password.html"}},
+		"profile.html":         {{"layouts", "layout.html"}, {"layouts", "sidebar-menu.html"}, {"profile", "index.html"}},
+		"dashboard.html":       {{"layouts", "layout.html"}, {"layouts", "sidebar-menu.html"}, {"dashboard", "index.html"}},
 	}
 
 	templates, err := loadTemplates(keys)

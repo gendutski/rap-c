@@ -75,7 +75,7 @@ func (h *BaseHandler) GetLayouts(activeMenu string) *Layouts {
 	return &Layouts{
 		AppName:      config.AppName,
 		Copyright:    h.GetCopyright(),
-		LogoutPath:   h.router.LogoutWebPage.Path(),
+		LogoutPath:   h.cfg.URL(h.router.LogoutWebPage.Path()),
 		LogoutMethod: h.router.LogoutWebPage.Method(),
 		SidebarMenus: h.GetSidebarMenu(activeMenu),
 	}

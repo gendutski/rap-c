@@ -9,32 +9,28 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type UserPage interface {
+type DashboardPage interface {
 	// profile page
-	Profile(e echo.Context) error
+	Dashboard(e echo.Context) error
 }
 
-func NewUserPage(cfg *config.Config, router *config.Route, sessionUsecase contract.SessionUsecase, userUsecase contract.UserUsecase, mailUsecase contract.MailUsecase) UserPage {
-	return &userHandler{
+func NewDashboardPage(cfg *config.Config, router *config.Route, sessionUsecase contract.SessionUsecase) DashboardPage {
+	return &dashboardHandler{
 		cfg:            cfg,
 		router:         router,
 		sessionUsecase: sessionUsecase,
-		userUsecase:    userUsecase,
-		mailUsecase:    mailUsecase,
 		BaseHandler:    handler.NewBaseHandler(cfg, router),
 	}
 }
 
-type userHandler struct {
+type dashboardHandler struct {
 	cfg            *config.Config
 	router         *config.Route
 	sessionUsecase contract.SessionUsecase
-	userUsecase    contract.UserUsecase
-	mailUsecase    contract.MailUsecase
 	BaseHandler    *handler.BaseHandler
 }
 
-func (h *userHandler) Profile(e echo.Context) error {
+func (h *dashboardHandler) Dashboard(e echo.Context) error {
 	// get author
 	author, err := h.BaseHandler.GetAuthor(e)
 	if err != nil {
@@ -47,10 +43,10 @@ func (h *userHandler) Profile(e echo.Context) error {
 		return err
 	}
 
-	return e.Render(http.StatusOK, "profile.html", map[string]interface{}{
+	return e.Render(http.StatusOK, "dashboard.html", map[string]interface{}{
 		"author":  author,
 		"token":   token,
-		"title":   "Profile",
+		"title":   "Dashboard",
 		"layouts": h.BaseHandler.GetLayouts("profile"),
 	})
 }

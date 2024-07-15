@@ -26,6 +26,7 @@ type WebHandler struct {
 	SessionUsecase contract.SessionUsecase
 	AuthPage       web.AuthPage
 	UserPage       web.UserPage
+	DashboardPage  web.DashboardPage
 }
 
 func SetWebRoute(e *echo.Echo, h *WebHandler) {
@@ -51,7 +52,7 @@ func SetWebRoute(e *echo.Echo, h *WebHandler) {
 
 	// user api
 	h.setAuthWebPage(e)
-	h.setUserWebPage(e, allLoginRole, nonGuestOnly)
+	h.setMainWebPage(e, allLoginRole, nonGuestOnly)
 }
 
 func (h *WebHandler) setAuthWebPage(e *echo.Echo) {
@@ -59,6 +60,8 @@ func (h *WebHandler) setAuthWebPage(e *echo.Echo) {
 	e.Add(h.Route.LoginWebPage.Method(), h.Route.LoginWebPage.Path(), h.AuthPage.Login)
 	// token session submit page
 	e.Add(h.Route.SubmitTokenSessionWebPage.Method(), h.Route.SubmitTokenSessionWebPage.Path(), h.AuthPage.SubmitToken)
+	// logout
+	e.Add(h.Route.LogoutWebPage.Method(), h.Route.LogoutWebPage.Path(), h.AuthPage.Logout)
 
 	// // reset password
 	// e.GET(entity.WebRequestResetPath, h.AuthPage.RequestResetPassword)
@@ -69,9 +72,12 @@ func (h *WebHandler) setAuthWebPage(e *echo.Echo) {
 	// 	middleware.ValidateJwtTokenFromSession(h.SessionUsecase, h.GuestAccepted))
 }
 
-func (h *WebHandler) setUserWebPage(e *echo.Echo, allLoginRole []echo.MiddlewareFunc, nonGuestOnly []echo.MiddlewareFunc) {
+func (h *WebHandler) setMainWebPage(e *echo.Echo, allLoginRole []echo.MiddlewareFunc, nonGuestOnly []echo.MiddlewareFunc) {
 	// all user
+	// profile page
 	e.Add(h.Route.ProfileWebPage.Method(), h.Route.ProfileWebPage.Path(), h.UserPage.Profile, allLoginRole...)
+	// dashboard
+	e.Add(h.Route.DashboardWebPage.Method(), h.Route.DashboardWebPage.Path(), h.DashboardPage.Dashboard, allLoginRole...)
 
 	// // non guest
 	// e.GET("/user", echo.NotFoundHandler, nonGuestOnly...)

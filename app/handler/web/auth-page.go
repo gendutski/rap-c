@@ -15,8 +15,8 @@ type AuthPage interface {
 	Login(e echo.Context) error
 	// set token to session
 	SubmitToken(e echo.Context) error
-	// // post logout
-	// PostLogout(e echo.Context) error
+	// post logout
+	Logout(e echo.Context) error
 	// // password must change page
 	// PasswordChanger(e echo.Context) error
 	// // request reset password page
@@ -118,16 +118,16 @@ func (h *authHandler) SubmitToken(e echo.Context) error {
 	).Path())
 }
 
-// func (h *authHandler) PostLogout(e echo.Context) error {
-// 	// destroy session
-// 	err := h.sessionUsecase.Logout(e)
-// 	if err != nil {
-// 		return err
-// 	}
+func (h *authHandler) Logout(e echo.Context) error {
+	// destroy session
+	err := h.sessionUsecase.Logout(e)
+	if err != nil {
+		return err
+	}
 
-// 	// redirect
-// 	return e.Redirect(http.StatusFound, entity.WebLoginPath)
-// }
+	// redirect
+	return e.Redirect(http.StatusFound, h.router.LoginWebPage.Path())
+}
 
 // func (h *authHandler) PasswordChanger(e echo.Context) error {
 // 	// get author

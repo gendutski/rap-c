@@ -35,6 +35,7 @@ func NewRenderer(autoReloadTemplate bool) (*Renderer, error) {
 		"request-reset.html":  {{"request-reset.html"}},
 		"reset-password.html": {{"reset-password.html"}},
 		"profile.html":        {{"layouts", "layout.html"}, {"layouts", "sidebar-menu.html"}, {"profile", "index.html"}},
+		"dashboard.html":      {{"layouts", "layout.html"}, {"layouts", "sidebar-menu.html"}, {"dashboard", "index.html"}},
 	}
 
 	templates, err := loadTemplates(keys)

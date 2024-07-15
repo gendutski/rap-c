@@ -70,6 +70,7 @@ func serve() {
 	// load web handler
 	authWeb := web.NewAuthPage(cfg, router, authUsecase, sessionUsecase, mailUsecase)
 	userWeb := web.NewUserPage(cfg, router, sessionUsecase, userUsecase, mailUsecase)
+	dashboardWeb := web.NewDashboardPage(cfg, router, sessionUsecase)
 
 	// init echo
 	e := echo.New()
@@ -108,6 +109,7 @@ func serve() {
 		SessionUsecase: sessionUsecase,
 		AuthPage:       authWeb,
 		UserPage:       userWeb,
+		DashboardPage:  dashboardWeb,
 	})
 
 	// set template renderer

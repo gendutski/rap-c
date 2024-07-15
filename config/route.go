@@ -23,6 +23,7 @@ type Route struct {
 	GuestLoginAPI           routeDetail `method:"POST" path:"/api/guest-login"`
 	PasswordMustChangeAPI   routeDetail `method:"PUT" path:"/api/renew-password"`
 	RequestResetPasswordAPI routeDetail `method:"POST" path:"/api/request-reset"`
+	ResetPasswordAPI        routeDetail `method:"POST" path:"/api/reset-password"`
 	DetailUserAPI           routeDetail `method:"GET" path:"/api/user/detail/:username"`
 	ListUserAPI             routeDetail `method:"GET" path:"/api/user/list"`
 	TotalUserAPI            routeDetail `method:"GET" path:"/api/user/total"`

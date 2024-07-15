@@ -2,7 +2,10 @@ package web
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"rap-c/app/entity"
+	payloadentity "rap-c/app/entity/payload-entity"
 	"rap-c/app/handler"
 	"rap-c/app/usecase/contract"
 	"rap-c/config"
@@ -21,8 +24,8 @@ type AuthPage interface {
 	PasswordMustChange(e echo.Context) error
 	// forgot password page
 	ForgotPassword(e echo.Context) error
-	// // reset password page
-	// ResetPassword(e echo.Context) error
+	// reset password page
+	ResetPassword(e echo.Context) error
 }
 
 func NewAuthPage(cfg *config.Config, router *config.Route, authUsecase contract.AuthUsecase, sessionUsecase contract.SessionUsecase, mailUsecase contract.MailUsecase) AuthPage {
@@ -170,42 +173,40 @@ func (h *authHandler) ForgotPassword(e echo.Context) error {
 	})
 }
 
-// func (h *authHandler) ResetPassword(e echo.Context) error {
-// 	ctx := e.Request().Context()
-// 	email := e.QueryParam("email")
-// 	token := e.QueryParam("token")
+func (h *authHandler) ResetPassword(e echo.Context) error {
+	// check if token session is exists and valid
+	_, _, err := h.sessionUsecase.ValidateJwtToken(e, h.cfg.EnableGuestLogin())
+	if err == nil {
+		return e.Redirect(http.StatusFound, h.router.DefaultAuthorizedWebPage(
+			h.sessionUsecase.GetPrevRoute(e),
+		).Path())
+	}
 
-// 	err := h.authUsecase.ValidateResetPassword(ctx, email, token)
-// 	if err != nil {
-// 		return err
-// 	}
+	// bind payload
+	payload := new(payloadentity.ValidateResetTokenPayload)
+	err = e.Bind(payload)
+	if err != nil {
+		return &echo.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.AllHandlerBindError,
+				fmt.Sprintf("auth-page.ResetPassword bind error: %v", err)),
+		}
+	}
 
-// 	// map route
-// 	routeMap := helper.RouteMap(e.Echo().Routes())
+	// validate token
+	ctx := e.Request().Context()
+	err = h.authUsecase.ValidateResetToken(ctx, payload)
+	if err != nil {
+		return err
+	}
 
-// 	// load session
-// 	sess := entity.InitSession(e.Request(), e.Response(), h.store, loginSessionName, h.cfg.LogMode, h.cfg.EnableWarnFileLog)
-
-// 	// get submit login error
-// 	var submitErr []string
-// 	var submitError []byte = []byte("[]")
-// 	if _submitErr := sess.Flash("error"); _submitErr != nil {
-// 		switch _val := _submitErr.(type) {
-// 		case []string:
-// 			submitErr = append(submitErr, _val...)
-// 		case string:
-// 			submitErr = append(submitErr, _val)
-// 		}
-// 	}
-// 	if len(submitErr) > 0 {
-// 		submitError, _ = json.Marshal(submitErr)
-// 	}
-
-// 	return e.Render(http.StatusOK, "reset-password.html", map[string]interface{}{
-// 		"email":          email,
-// 		"token":          token,
-// 		"submitError":    string(submitError),
-// 		"passwordMethod": routeMap.Get(entity.SubmitResetPasswordName, "method"),
-// 		"passwordAction": routeMap.Get(entity.SubmitResetPasswordName, "path"),
-// 	})
-// }
+	return e.Render(http.StatusOK, "reset-password.html", map[string]interface{}{
+		"email":                    payload.Email,
+		"token":                    payload.Token,
+		"passwordMethod":           h.router.ResetPasswordAPI.Method(),
+		"passwordAction":           h.router.ResetPasswordAPI.Path(),
+		"submitTokenSessionMethod": h.router.SubmitTokenSessionWebPage.Method(),
+		"submitTokenSessionAction": h.cfg.URL(h.router.SubmitTokenSessionWebPage.Path()),
+	})
+}

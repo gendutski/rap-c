@@ -437,7 +437,8 @@ func Test_SubmitResetPassword(t *testing.T) {
 			Token: "token",
 		}
 		payload := &payloadentity.ResetPasswordPayload{
-			TokenEmail:      payloadToken,
+			Email:           "gendutski@gmail.com",
+			Token:           "token",
 			Password:        "new password",
 			ConfirmPassword: "new password",
 		}
@@ -484,10 +485,8 @@ func Test_SubmitResetPassword(t *testing.T) {
 
 	t.Run("validator TokenEmail struct not valid", func(t *testing.T) {
 		payload := &payloadentity.ResetPasswordPayload{
-			TokenEmail: &payloadentity.ValidateResetTokenPayload{
-				Email: "gendutski.com",
-				Token: "token",
-			},
+			Email:           "gendutski.com",
+			Token:           "token",
 			Password:        "new password",
 			ConfirmPassword: "new password",
 		}

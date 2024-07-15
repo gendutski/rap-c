@@ -216,13 +216,16 @@ func (uc *usecase) SubmitResetPassword(ctx context.Context, payload *payloadenti
 	}
 
 	// get reset pasword data
-	reset, err := uc.authRepo.ValidateResetToken(ctx, payload.TokenEmail)
+	reset, err := uc.authRepo.ValidateResetToken(ctx, &payloadentity.ValidateResetTokenPayload{
+		Email: payload.Email,
+		Token: payload.Token,
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	// get user
-	user, err := uc.authRepo.GetUserByEmail(ctx, payload.TokenEmail.Email)
+	user, err := uc.authRepo.GetUserByEmail(ctx, payload.Email)
 	if err != nil {
 		return nil, err
 	}

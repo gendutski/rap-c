@@ -16,12 +16,13 @@ type RequestResetPayload struct {
 }
 
 type ValidateResetTokenPayload struct {
-	Email string `json:"email" form:"email" validate:"required,email"`
-	Token string `json:"token" form:"token" validate:"required"`
+	Email string `json:"email" form:"email" query:"email" validate:"required,email"`
+	Token string `json:"token" form:"token" query:"token" validate:"required"`
 }
 
 type ResetPasswordPayload struct {
-	TokenEmail      *ValidateResetTokenPayload `validate:"required"`
-	Password        string                     `json:"password" form:"password" validate:"required"`
-	ConfirmPassword string                     `json:"confirmPassword" form:"confirmPassword" validate:"required,eqfield=Password"`
+	Email           string `json:"email" form:"email" query:"email" validate:"required,email"`
+	Token           string `json:"token" form:"token" query:"token" validate:"required"`
+	Password        string `json:"password" form:"password" validate:"required"`
+	ConfirmPassword string `json:"confirmPassword" form:"confirmPassword" validate:"required,eqfield=Password"`
 }

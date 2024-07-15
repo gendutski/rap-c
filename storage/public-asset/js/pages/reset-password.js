@@ -12,7 +12,7 @@ function toastInfo(message) {
 }
 
 function ajaxLoading() {
-    let form = document.getElementById("formRenew");
+    let form = document.getElementById("formReset");
 
     // disable form elements
     for (let i = 0; i < form.elements.length; i++) {
@@ -23,12 +23,10 @@ function ajaxLoading() {
                 addClass("spinner-border spinner-border-sm");
         }
     }
-
-    $('#btn-logout').attr('disabled', true);
 }
 
 function ajaxDone() {
-    let form = document.getElementById("formRenew");
+    let form = document.getElementById("formReset");
 
     // disable form login
     for (let i = 0; i < form.elements.length; i++) {
@@ -39,41 +37,52 @@ function ajaxDone() {
                 addClass("fa-solid fa-floppy-disk");
         }
     }
-
-    $('#btn-logout').removeAttr('disabled');
 }
 
-function renewPassword(form) {
+function resetPassword(form) {
     $.ajax({
         type: $(form).attr('method'),
         url: $(form).attr('action'),
         cache: false,
         beforeSend: function (xhr) {
             xhr.setRequestHeader('Accept', '*/*');
-            xhr.setRequestHeader('Authorization', document.getElementById('tokenBox').innerHTML);
             ajaxLoading();
         },
         data: $(form).serialize(),
         dataType: "json"
     }).done(function (response) {
-        // go to authorized page
-        window.location.href = document.getElementById('redirectPath').innerHTML
-    }).fail(function ($jqXHR, $errorThrown) {
+        toastInfo("password tersimpan");
+
+        // go to submit token page
+        setTimeout(function () {
+            $('#formSubmitToken input[name="token"]').val(response.token);
+            $('#formSubmitToken').submit();
+        }, 1500);
+    }).fail(function ($jqXHR) {
         ajaxDone();
         try {
             let response = JSON.parse($jqXHR.responseText);
             if (response.code) {
                 switch (response.code) {
-                    case 400003:
-                        toastInfo("anda tidak dapat menggunakan password yang sama!");
+                    case 404001:
+                        toastInfo("token tidak ditemukan, atau token sudah kadaluwarsa");
+                        break;
+                    case 404002:
+                        toastInfo("email tidak ditemukan");
                         break;
                     case 400999:
                         // validator fails
                         for (let x in response.message) {
-                            if (x == "password") {
+                            if (x == "token") {
                                 for (let y in response.message[x]) {
                                     if (response.message[x][y].tag == "required") {
-                                        toastInfo("password wajib di isi!");
+                                        toastInfo("token dari email wajib disertakan!");
+                                    }
+                                }
+                            } else if (x == "password") {
+                                for (let y in response.message[x]) {
+                                    if (response.message[x][y].tag == "required") {
+                                        toastInfo("password wajib diisi!");
                                     }
                                 }
                             } else if (x == "confirmPassword") {

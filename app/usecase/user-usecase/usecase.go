@@ -83,10 +83,58 @@ func (uc *usecase) GetTotalUserList(ctx context.Context, req *payloadentity.GetU
 	return uc.userRepo.GetTotalUsersByRequest(ctx, req)
 }
 
-func (uc *usecase) GetUserByUsername(ctx context.Context, username string) (*databaseentity.User, error) {
-	user, err := uc.userRepo.GetUserByField(ctx, "username", username, http.StatusNotFound)
+func (uc *usecase) GetUserByUsername(ctx context.Context, req *payloadentity.GetUserDetailRequest) (*databaseentity.User, error) {
+	// validate request
+	err := entity.InitValidator().Validate(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// get user by username
+	user, err := uc.userRepo.GetUserByField(ctx, "username", req.Username, http.StatusNotFound)
 	if err != nil {
 		return nil, err
 	}
 	return user, nil
+}
+
+func (uc *usecase) Update(ctx context.Context, payload *payloadentity.UpdateUserPayload, author *databaseentity.User) error {
+	// validate payload
+	err := entity.InitValidator().Validate(payload)
+	if err != nil {
+		return err
+	}
+
+	var isModified bool
+	if payload.Username != "" {
+		author.Username = payload.Username
+		isModified = true
+	}
+	if payload.FullName != "" {
+		author.FullName = payload.FullName
+		isModified = true
+	}
+	if payload.Email != "" {
+		author.Email = payload.Email
+		isModified = true
+	}
+	if payload.Password != "" {
+		// encrypt password
+		encryptPassword, err := helper.EncryptPassword(payload.Password)
+		if err != nil {
+			return &echo.HTTPError{
+				Code:     http.StatusInternalServerError,
+				Message:  http.StatusText(http.StatusInternalServerError),
+				Internal: entity.NewInternalError(entity.HelperEncryptPasswordError, err.Error()),
+			}
+		}
+		author.Password = encryptPassword
+		author.PasswordMustChange = false
+		isModified = true
+	}
+	if isModified {
+		author.UpdatedBy = author.Username
+		return uc.userRepo.Update(ctx, author)
+	}
+	return nil
 }

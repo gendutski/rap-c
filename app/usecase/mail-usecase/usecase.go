@@ -15,6 +15,7 @@ import (
 const (
 	welcomeSubject string = "Selamat datang di Rap-C"
 	resetSubject   string = "Permintaan reset pasword di Rap-C"
+	updateSubject  string = "Perubahan data user di Rap-C"
 )
 
 func NewUsecase(cfg *config.Config, router *config.Route) contract.MailUsecase {
@@ -140,4 +141,48 @@ func (uc *usecase) ResetPassword(user *databaseentity.User, token *databaseentit
 	}
 
 	return uc.send(user.Email, resetSubject, resText, resHtml)
+}
+
+func (uc *usecase) UpdateUser(user *databaseentity.User) error {
+	// init hermes
+	h := uc.initHermes()
+
+	// init hermes email
+	email := hermes.Email{
+		Body: hermes.Body{
+			Greeting: "Hai",
+			Name:     user.FullName,
+			Intros: []string{
+				"Anda menerima email ini karena anda melakukan perubahan pada data user anda.",
+			},
+			Dictionary: []hermes.Entry{
+				{Key: "Nama Lengkap", Value: user.FullName},
+				{Key: "Username", Value: user.Username},
+				{Key: "Email", Value: user.Email},
+			},
+			Signature: "Hormat Kami",
+		},
+	}
+
+	// generate html email
+	resHtml, err := h.GenerateHTML(email)
+	if err != nil {
+		return &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.MailUsecaseGenerateHTMLError, err.Error()),
+		}
+	}
+
+	// generate text html
+	resText, err := h.GeneratePlainText(email)
+	if err != nil {
+		return &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.MailUsecaseGeneratePlainTextError, err.Error()),
+		}
+	}
+
+	return uc.send(user.Email, updateSubject, resText, resHtml)
 }

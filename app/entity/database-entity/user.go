@@ -14,7 +14,7 @@ const (
 // table users model
 type User struct {
 	ID                 int       `gorm:"primaryKey" json:"-"`
-	Username           string    `gorm:"unique;size:30;not null" json:"userName"`
+	Username           string    `gorm:"unique;size:30;not null" json:"username"`
 	FullName           string    `gorm:"size:100;not null" json:"fullName"`
 	Email              string    `gorm:"unique;size:100;not null" json:"email"`
 	Password           string    `gorm:"size:255;not null" json:"-"`

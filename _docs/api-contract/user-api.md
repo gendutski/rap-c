@@ -1,59 +1,10 @@
 # User API Contract
 
-1. Renew Password
-    - Path: **/api/user/renew-password**
-    - Method: **Put**
-    - Authorization: **Bearer token non guest**
-    - Payload:
-    ```json
-    {
-        "password": "<email>",
-        "confirmPassword": "<string>"
-    }
-    ```
-    - Response:
-    ```json
-    {
-        "status": "ok"
-    }
-    ```
-
-2. Create User<br>
-    Menambah user baru, auto generate password, dan mengirim welcome email ke user. 
-    Password harus diganti user bersangkutan saat pertama kali login
-    - Path: **/api/user/create**
-    - Method: **Post** 
-    - Authorization: **Bearer token non guest**
-    - Payload:
-    ```json
-    {
-        "username": "<string>",
-        "fullName": "<string>",
-        "email": "<email>"
-    }
-    ```
-    - Response:
-    ```json
-    {
-        "username": "<string>",
-        "fullName": "<string>",
-        "email": "<string>",
-        "passwordMustChange": <bool>,
-        "disabled": <bool>,
-        "isGuest": <bool>,
-        "createdAt": "<timestamp>",
-        "createdBy": "<string>",
-        "updatedAt": "<timestamp>",
-        "updatedBy": "<string>"
-    }
-    ```
-
-3. Get User By Username<br>
-    Mendapatkan single user berdasarkan username
+1. Get User By Username<br>
     - Path: **/api/user/detail/{username}**
     - Method: **Get** 
-    - Authorization: **Bearer token**
-    - Response:
+    - Authorization: **Bearer <token>**
+    - Ok Response:
     ```json
     {
         "username": "<string>",
@@ -68,18 +19,44 @@
         "updatedBy": "<string>"
     }
     ```
+    - Error (non internal service error) Response:
+        - Validator Bad Request (http status 400)
+        ```json
+        {
+            "code": 400999,
+            "message": {
+                "username": [
+                    // username field must not empty
+                    {"tag": "required", "param": ""},
+                ]
+            }
+        }
+        ```
+        - User password must be changed (http status 403)
+        ```json
+            {
+                "code": 403003,
+                "message": "the password must be changed"
+            }
+        ```
+        - User not found (http status 404)
+        ```json
+        {
+            "code": 404002,
+            "message": "user with `username` = `<string>` not found"
+        }
 
-4. Get User List<br>
-    Daftar user yang akan di sort berdasarkan field yang diinput di sortField(default `createdAt`) secara `asc` atau `desc` (jika `descendingOrder` = `true`)
+2. Get User List<br>
+    List of users that will be sorted based on the fields entered in sortField(default `createdAt`) in `asc` or `desc` (if `descendingOrder` = `true`)
     - Path: **/api/user/list**
     - Method: **Get** 
     - Authorization: **Bearer token**
     - Request:
     ```json
     {
-        "userName": "<string>",
+        "username": "<string>",
         "email": "<string>",
-        "fullName": "<string>",
+        "fullName": "<stringList of users that will be sorted based on the fields entered in sortField(default `createdAt`) in `asc` or `desc` (if `descendingOrder` = `true`)>",
         "show": "<all|active|not active>",
         "sortField": "<username|fullName|email|createdAt|updatedAt>",
         "descendingOrder": <bool>,
@@ -87,7 +64,7 @@
         "page": <int>
     }
     ```
-    - Response:
+    - Ok Response:
     ```json
     {
         "users": [
@@ -105,7 +82,7 @@
             }
         ],
         "request": {
-            "userName": "<string>",
+            "username": "<string>",
             "email": "<string>",
             "fullName": "<string>",
             "show": "<all|active|not active>",
@@ -117,15 +94,15 @@
     }
     ```
 
-5. Get User Total<br>
-    Total user berdasarkan request
+3. Get User Total<br>
+    Total users based on request
     - Path: **/api/user/total**
     - Method: **Get** 
     - Authorization: **Bearer token**
     - Request:
     ```json
     {
-        "userName": "<string>",
+        "username": "<string>",
         "email": "<string>",
         "fullName": "<string>",
         "show": "<all|active|not active>"
@@ -136,7 +113,7 @@
     {
         "total": <int>,
         "request": {
-            "userName": "<string>",
+            "username": "<string>",
             "email": "<string>",
             "fullName": "<string>",
             "show": "<all|active|not active>",
@@ -147,20 +124,22 @@
         }
     }
     ```
-6. Update User<br>
-    Update username, password, fullname dari user yang bersangkutan
-    - Path: **/api/user/update**
-    - Method: **Put** 
+
+4. Create User<br>
+    Add new users, auto generate passwords, and send welcome emails to users. 
+    The password must be changed by the user concerned the first time they log in
+    - Path: **/api/user/create**
+    - Method: **Post** 
     - Authorization: **Bearer token non guest**
     - Payload:
     ```json
     {
         "username": "<string>",
-        "password": "<string>",
-        "fullName": "<string>"
+        "fullName": "<string>",
+        "email": "<email>"
     }
     ```
-    - Response:
+    - Ok Response:
     ```json
     {
         "username": "<string>",
@@ -175,8 +154,96 @@
         "updatedBy": "<string>"
     }
     ```
-7. Enable/Disable User<br>
-    Aktifkan atau non aktifkan user lain
+    - Error (non internal service error) Response:
+        - Validator Bad Request (http status 400)
+        ```json
+        {
+            "code": 400999,
+            "message": {
+                "email": [
+                    // email field must not empty
+                    {"tag": "required", "param": ""},
+                    // email field must be a valid email address
+                    {"tag": "email", "param": ""}
+                ],
+                "fullName": [
+                    // fullName field must not empty
+                    {"tag": "required", "param": ""}
+                ],
+                "username": [
+                    // username field must not empty
+                    {"tag": "required", "param": ""}
+                    // username field max length is 30
+                    {"tag": "max", "param": "30"}
+                    // username field not valid (only accept alphanumeric, period, dash, and underscore)
+                    {"tag": "username", "param": ""}
+                ]
+            }
+        }
+        ```
+
+5. Update User<br>
+    Update username, fullname, email and password, from current user
+    - Path: **/api/user/update**
+    - Method: **Put** 
+    - Authorization: **Bearer token non guest**
+    - Payload:
+    ```json
+    {
+        "username": "<string>",
+        "fullName": "<string>",
+        "email": "<email>",
+        "password": "<string>",
+        "confirmPassword": "<string>"
+    }
+    ```
+    - Ok Response:
+    ```json
+    {
+        "username": "<string>",
+        "fullName": "<string>",
+        "email": "<string>",
+        "passwordMustChange": <bool>,
+        "disabled": <bool>,
+        "isGuest": <bool>,
+        "createdAt": "<timestamp>",
+        "createdBy": "<string>",
+        "updatedAt": "<timestamp>",
+        "updatedBy": "<string>"
+    }
+    ```
+    - Error (non internal service error) Response:
+        - Validator Bad Request (http status 400)
+        ```json
+        {
+            "code": 400999,
+            "message": {
+                "username": [
+                    // username field max length is 30
+                    {"tag": "max", "param": "30"}
+                    // username field not valid (only accept alphanumeric, period, dash, and underscore)
+                    {"tag": "username", "param": ""}
+                ],
+                "email": [
+                    // email field must be a valid email address
+                    {"tag": "email", "param": ""}
+                ],
+                "password": [
+                    // password field must not less than 8 characters
+                    {"tag": "min", "param": "8"}
+                ],
+                "confirmPassword": [
+                    // confirmPassword field must not empty if password field not empty
+                    {"tag": "required_with", "param": "Password"},
+                    // confirmPassword field not match with password field
+                    {"tag": "eqfield", "param": "Password"}
+                ]
+            }
+        }
+        ```
+
+6. Enable/Disable User<br>
+    Enable or disable other user
     - Path: **/api/user/active-status**
     - Method: **Put** 
     - Authorization: **Bearer token non guest**

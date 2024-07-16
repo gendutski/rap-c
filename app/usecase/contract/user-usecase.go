@@ -14,5 +14,7 @@ type UserUsecase interface {
 	// get total user list
 	GetTotalUserList(ctx context.Context, req *payloadentity.GetUserListRequest) (int64, error)
 	// get user by username
-	GetUserByUsername(ctx context.Context, username string) (*databaseentity.User, error)
+	GetUserByUsername(ctx context.Context, req *payloadentity.GetUserDetailRequest) (*databaseentity.User, error)
+	// update current user data
+	Update(ctx context.Context, payload *payloadentity.UpdateUserPayload, author *databaseentity.User) error
 }

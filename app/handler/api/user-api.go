@@ -21,6 +21,8 @@ type UserAPI interface {
 	GetTotalUserList(e echo.Context) error
 	// get user detail by username
 	GetUserDetailByUsername(e echo.Context) error
+	// update current user data
+	Update(e echo.Context) error
 }
 
 func NewUserHandler(cfg *config.Config, router *config.Route, userUsecase contract.UserUsecase, mailUsecase contract.MailUsecase) UserAPI {
@@ -81,7 +83,7 @@ func (h *userHandler) Create(e echo.Context) error {
 			entity.InitLog(
 				e.Request().RequestURI,
 				e.Request().Method,
-				"send welcome mail",
+				"send welcome email",
 				http.StatusOK,
 				err,
 				h.cfg.LogMode(),
@@ -140,13 +142,73 @@ func (h *userHandler) GetTotalUserList(e echo.Context) error {
 }
 
 func (h *userHandler) GetUserDetailByUsername(e echo.Context) error {
-	username := e.Param("username")
-	ctx := e.Request().Context()
+	req := new(payloadentity.GetUserDetailRequest)
+	err := e.Bind(req)
+	if err != nil {
+		return &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.AllHandlerBindError, fmt.Sprintf("user-api.GetUserDetailByUsername bind error: %v", err)),
+		}
+	}
 
-	user, err := h.userUsecase.GetUserByUsername(ctx, username)
+	ctx := e.Request().Context()
+	user, err := h.userUsecase.GetUserByUsername(ctx, req)
 	if err != nil {
 		return err
 	}
 
 	return e.JSON(http.StatusOK, user)
+}
+
+func (h *userHandler) Update(e echo.Context) error {
+	payload := new(payloadentity.UpdateUserPayload)
+	err := e.Bind(payload)
+	if err != nil {
+		return &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.AllHandlerBindError, fmt.Sprintf("user-api.Update bind error: %v", err)),
+		}
+	}
+
+	// get author
+	author, err := h.BaseHandler.GetAuthor(e)
+	if err != nil {
+		return err
+	}
+
+	// update user
+	ctx := e.Request().Context()
+	err = h.userUsecase.Update(ctx, payload, author)
+	if err != nil {
+		return err
+	}
+
+	// send email
+	go func() {
+		entity.InitLog(
+			e.Request().RequestURI,
+			e.Request().Method,
+			fmt.Sprintf("Send update user email to %s", author.Email),
+			http.StatusOK,
+			nil,
+			h.cfg.LogMode(),
+			false,
+		).Log()
+		err = h.mailUsecase.UpdateUser(author)
+		if err != nil {
+			entity.InitLog(
+				e.Request().RequestURI,
+				e.Request().Method,
+				"send update user email",
+				http.StatusOK,
+				err,
+				h.cfg.LogMode(),
+				h.cfg.EnableWarnFileLog(),
+			).Log()
+		}
+	}()
+
+	return e.JSON(http.StatusOK, author)
 }

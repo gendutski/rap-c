@@ -133,7 +133,7 @@ func (r *repo) GetUsersByRequest(ctx context.Context, req *payloadentity.GetUser
 	qry := r.renderUsersQuery(req)
 	// validate sort
 	validSort := map[string]string{
-		"userName":  "user_name",
+		"username":  "user_name",
 		"fullName":  "full_name",
 		"email":     "email",
 		"role":      "role",

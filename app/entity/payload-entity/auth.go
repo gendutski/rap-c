@@ -7,7 +7,7 @@ type AttemptLoginPayload struct {
 }
 
 type RenewPasswordPayload struct {
-	Password        string `json:"password" form:"password" validate:"required"`
+	Password        string `json:"password" form:"password" validate:"required,min=8"`
 	ConfirmPassword string `json:"confirmPassword" form:"confirmPassword" validate:"required,eqfield=Password"`
 }
 
@@ -23,6 +23,6 @@ type ValidateResetTokenPayload struct {
 type ResetPasswordPayload struct {
 	Email           string `json:"email" form:"email" query:"email" validate:"required,email"`
 	Token           string `json:"token" form:"token" query:"token" validate:"required"`
-	Password        string `json:"password" form:"password" validate:"required"`
+	Password        string `json:"password" form:"password" validate:"required,min=8"`
 	ConfirmPassword string `json:"confirmPassword" form:"confirmPassword" validate:"required,eqfield=Password"`
 }

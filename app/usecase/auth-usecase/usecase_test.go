@@ -167,7 +167,7 @@ func Test_GenerateJwtToken(t *testing.T) {
 			return []byte(cfg.JwtSecret()), nil
 		})
 		assert.Equal(t, float64(1), claims["id"])
-		assert.Equal(t, "gendutski", claims["userName"])
+		assert.Equal(t, "gendutski", claims["username"])
 		assert.Equal(t, "mvp.firman.darmawan@gmail.com", claims["email"])
 		assert.Equal(t, float64(exp), claims["exp"])
 	})
@@ -188,7 +188,7 @@ func Test_GenerateJwtToken(t *testing.T) {
 			return []byte(cfg.JwtSecret()), nil
 		})
 		assert.Equal(t, float64(1), claims["id"])
-		assert.Equal(t, "gendutski", claims["userName"])
+		assert.Equal(t, "gendutski", claims["username"])
 		assert.Equal(t, "mvp.firman.darmawan@gmail.com", claims["email"])
 		assert.Equal(t, exp.Format("2006-01-02"), time.Unix(int64(claims["exp"].(float64)), 0).Format("2006-01-02"))
 	})
@@ -216,7 +216,7 @@ func Test_ValidateJwtToken(t *testing.T) {
 
 		res, err := uc.ValidateJwtToken(ctx, jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"id":       2,
-			"userName": "guest",
+			"username": "guest",
 			"email":    "guest@gmail.com",
 			"exp":      time.Now().Add(time.Hour).Unix(),
 		}), true)
@@ -229,7 +229,7 @@ func Test_ValidateJwtToken(t *testing.T) {
 
 		res, err := uc.ValidateJwtToken(ctx, jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"id":       1,
-			"userName": "gendutski",
+			"username": "gendutski",
 			"email":    "gendutski@gmail.com",
 			"exp":      time.Now().Add(time.Hour).Unix(),
 		}), true)
@@ -242,7 +242,7 @@ func Test_ValidateJwtToken(t *testing.T) {
 
 		_, err := uc.ValidateJwtToken(ctx, jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"id":       1,
-			"userName": "gendutski",
+			"username": "gendutski",
 			"email":    "guest@gmail.com",
 			"exp":      time.Now().Add(time.Hour).Unix(),
 		}), true)
@@ -258,7 +258,7 @@ func Test_ValidateJwtToken(t *testing.T) {
 
 		_, err := uc.ValidateJwtToken(ctx, jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"id":       2,
-			"userName": "guest",
+			"username": "guest",
 			"email":    "guest@gmail.com",
 			"exp":      time.Now().Add(time.Hour).Unix(),
 		}), false)

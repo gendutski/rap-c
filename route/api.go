@@ -65,9 +65,9 @@ func (h *APIHandler) setUserAPI(e *echo.Echo, allLoginRole []echo.MiddlewareFunc
 	// non guest
 	// create new user
 	e.Add(h.Route.CreateUserAPI.Method(), h.Route.CreateUserAPI.Path(), h.UserAPI.Create, nonGuestOnly...)
-	// update current user [TODO: HANDLE]
-	e.Add(h.Route.UpdateUserAPI.Method(), h.Route.UpdateUserAPI.Path(), echo.NotFoundHandler, nonGuestOnly...)
-	// update user active status [TODO: HANDLE]
+	// update current user
+	e.Add(h.Route.UpdateUserAPI.Method(), h.Route.UpdateUserAPI.Path(), h.UserAPI.Update, nonGuestOnly...)
+	// update user active status
 	e.Add(h.Route.SetStatusUserAPI.Method(), h.Route.SetStatusUserAPI.Path(), echo.NotFoundHandler, nonGuestOnly...)
 }
 

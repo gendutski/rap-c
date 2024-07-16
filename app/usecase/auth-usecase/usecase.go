@@ -18,7 +18,7 @@ import (
 
 const (
 	tokenStrID    string = "id"
-	tokenStrName  string = "userName"
+	tokenStrName  string = "username"
 	tokenStrEmail string = "email"
 )
 

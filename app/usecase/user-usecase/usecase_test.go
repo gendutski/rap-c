@@ -87,3 +87,111 @@ func Test_Create(t *testing.T) {
 		}, herr.Message)
 	})
 }
+
+func Test_GetUserByUsername(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	uc, userRepo := initUsecase(ctrl, &config.Config{})
+	ctx := context.Background()
+
+	t.Run("success", func(t *testing.T) {
+		validUser := &databaseentity.User{
+			Username: "gendutski",
+		}
+
+		userRepo.EXPECT().GetUserByField(ctx, "username", "gendutski", 404).Return(validUser, nil).Times(1)
+
+		res, err := uc.GetUserByUsername(ctx, &payloadentity.GetUserDetailRequest{
+			Username: "gendutski",
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, validUser, res)
+	})
+
+	t.Run("validator fails", func(t *testing.T) {
+		res, err := uc.GetUserByUsername(ctx, &payloadentity.GetUserDetailRequest{})
+		assert.Nil(t, res)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, herr.Code)
+		assert.Equal(t, entity.ValidatorBadRequest, herr.Internal.(*entity.InternalError).Code)
+	})
+}
+
+func Test_Update(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	uc, userRepo := initUsecase(ctrl, &config.Config{})
+	ctx := context.Background()
+
+	t.Run("success", func(t *testing.T) {
+		author := &databaseentity.User{
+			Username: "gendutski",
+			FullName: "Firman Darmawan",
+			Email:    "gendutski@gmail.com",
+			Password: "password",
+		}
+
+		userRepo.EXPECT().Update(ctx, CreateMatcher(&databaseentity.User{
+			Username:           "gendutski-1",
+			FullName:           "Lord Firman Darmawan",
+			Email:              "mvp.firman.darmawan@gmail.com",
+			PasswordMustChange: false,
+			UpdatedBy:          "gendutski-1",
+		})).Return(nil).Times(1)
+
+		err := uc.Update(ctx, &payloadentity.UpdateUserPayload{
+			Username:        "gendutski-1",
+			FullName:        "Lord Firman Darmawan",
+			Email:           "mvp.firman.darmawan@gmail.com",
+			Password:        "new awesome password",
+			ConfirmPassword: "new awesome password",
+		}, author)
+		assert.Nil(t, err)
+		assert.True(t, helper.ValidateEncryptedPassword(author.Password, "new awesome password"))
+		assert.False(t, author.PasswordMustChange)
+		assert.Equal(t,
+			[]string{"gendutski-1", "Lord Firman Darmawan", "mvp.firman.darmawan@gmail.com"},
+			[]string{author.Username, author.FullName, author.Email},
+		)
+	})
+
+	t.Run("no change (empty payload)", func(t *testing.T) {
+		author := &databaseentity.User{
+			Username: "gendutski",
+			FullName: "Firman Darmawan",
+			Email:    "gendutski@gmail.com",
+			Password: "password",
+		}
+
+		err := uc.Update(ctx, &payloadentity.UpdateUserPayload{}, author)
+		assert.Nil(t, err)
+		assert.Equal(t,
+			[]string{"gendutski", "Firman Darmawan", "gendutski@gmail.com"},
+			[]string{author.Username, author.FullName, author.Email},
+		)
+	})
+
+	t.Run("validator failed", func(t *testing.T) {
+		author := &databaseentity.User{
+			Username: "gendutski",
+			FullName: "Firman Darmawan",
+			Email:    "gendutski@gmail.com",
+			Password: "password",
+		}
+
+		err := uc.Update(ctx, &payloadentity.UpdateUserPayload{
+			Password:        "short",
+			ConfirmPassword: "not match",
+		}, author)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, herr.Code)
+		assert.Equal(t, entity.ValidatorBadRequest, herr.Internal.(*entity.InternalError).Code)
+		assert.Equal(t, map[string][]*entity.ValidatorMessage{
+			"password":        {{Tag: "min", Param: "8"}},
+			"confirmPassword": {{Tag: "eqfield", Param: "Password"}},
+		}, herr.Message)
+	})
+
+}

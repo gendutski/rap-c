@@ -173,7 +173,7 @@
             }
         }
         ```
-        - Email not found (http status 402)
+        - Email not found (http status 404)
         ```json
         {
             "code": 404002,

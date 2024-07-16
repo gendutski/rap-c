@@ -48,9 +48,11 @@ func (h *userHandler) Profile(e echo.Context) error {
 	}
 
 	return e.Render(http.StatusOK, "profile.html", map[string]interface{}{
-		"author":  author,
-		"token":   token,
-		"title":   "Profile",
-		"layouts": h.BaseHandler.GetLayouts("profile"),
+		"author":           author,
+		"token":            token,
+		"title":            "Profile",
+		"layouts":          h.BaseHandler.GetLayouts("profile"),
+		"formUpdateMethod": h.router.UpdateUserAPI.Method(),
+		"formUpdateAction": h.router.UpdateUserAPI.Path(),
 	})
 }

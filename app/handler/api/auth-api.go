@@ -140,7 +140,7 @@ func (h *authHandler) RequestResetPassword(e echo.Context) error {
 	}
 
 	return e.JSON(http.StatusOK, map[string]interface{}{
-		"success": "email for request reset password has been sent",
+		"status": "email for request reset password has been sent",
 	})
 }
 

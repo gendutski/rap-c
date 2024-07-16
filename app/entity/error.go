@@ -10,6 +10,10 @@ const (
 	CreateUserUsernameDuplicateMessage        string = "duplicate username, username '%s` is already in use"
 	RenewPasswordWithUnchangedPassword        int    = 400003
 	RenewPasswordWithUnchangedPasswordMessage string = "cannot use same password"
+	DeactivatingInActiveUser                  int    = 400004
+	DeactivatingInActiveUserMessage           string = "try deactivating inactive users"
+	ActivatingActiveUser                      int    = 400005
+	ActivatingActiveUserMessage               string = "try activating active users"
 	ValidatorBadRequest                       int    = 400999
 	ValidatorBadRequestMessage                string = "bad request, validator failed"
 

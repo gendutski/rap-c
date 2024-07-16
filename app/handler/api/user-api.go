@@ -23,6 +23,8 @@ type UserAPI interface {
 	GetUserDetailByUsername(e echo.Context) error
 	// update current user data
 	Update(e echo.Context) error
+	// activate or deactivate user
+	SetActiveStatusUser(e echo.Context) error
 }
 
 func NewUserHandler(cfg *config.Config, router *config.Route, userUsecase contract.UserUsecase, mailUsecase contract.MailUsecase) UserAPI {
@@ -211,4 +213,56 @@ func (h *userHandler) Update(e echo.Context) error {
 	}()
 
 	return e.JSON(http.StatusOK, author)
+}
+
+func (h *userHandler) SetActiveStatusUser(e echo.Context) error {
+	payload := new(payloadentity.ActiveStatusPayload)
+	err := e.Bind(payload)
+	if err != nil {
+		return &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.AllHandlerBindError, fmt.Sprintf("user-api.Update bind error: %v", err)),
+		}
+	}
+
+	// get author
+	author, err := h.BaseHandler.GetAuthor(e)
+	if err != nil {
+		return err
+	}
+
+	// update status
+	ctx := e.Request().Context()
+	user, err := h.userUsecase.UpdateActiveStatus(ctx, payload, author)
+	if err != nil {
+		return err
+	}
+
+	// send email
+	go func() {
+		entity.InitLog(
+			e.Request().RequestURI,
+			e.Request().Method,
+			fmt.Sprintf("Send update user status email to %s", user.Email),
+			http.StatusOK,
+			nil,
+			h.cfg.LogMode(),
+			false,
+		).Log()
+		err = h.mailUsecase.UpdateActiveStatusUser(user)
+		if err != nil {
+			entity.InitLog(
+				e.Request().RequestURI,
+				e.Request().Method,
+				"send update user status email",
+				http.StatusOK,
+				err,
+				h.cfg.LogMode(),
+				h.cfg.EnableWarnFileLog(),
+			).Log()
+		}
+	}()
+
+	return e.JSON(http.StatusOK, user)
 }

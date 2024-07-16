@@ -138,3 +138,44 @@ func (uc *usecase) Update(ctx context.Context, payload *payloadentity.UpdateUser
 	}
 	return nil
 }
+
+func (uc *usecase) UpdateActiveStatus(ctx context.Context, payload *payloadentity.ActiveStatusPayload, author *databaseentity.User) (*databaseentity.User, error) {
+	// validate payload
+	err := entity.InitValidator().Validate(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	// get target user
+	user, err := uc.userRepo.GetUserByField(ctx, "username", payload.Username, http.StatusNotFound)
+	if err != nil {
+		return nil, err
+	}
+
+	// validate status
+	if user.Disabled == payload.Disabled {
+		if user.Disabled {
+			return nil, &echo.HTTPError{
+				Code:     http.StatusBadRequest,
+				Message:  entity.DeactivatingInActiveUserMessage,
+				Internal: entity.NewInternalError(entity.DeactivatingInActiveUser, entity.DeactivatingInActiveUserMessage),
+			}
+		} else {
+			return nil, &echo.HTTPError{
+				Code:     http.StatusBadRequest,
+				Message:  entity.ActivatingActiveUserMessage,
+				Internal: entity.NewInternalError(entity.ActivatingActiveUser, entity.ActivatingActiveUserMessage),
+			}
+		}
+	}
+
+	// update user
+	user.Disabled = payload.Disabled
+	user.UpdatedBy = author.Username
+	err = uc.userRepo.Update(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}

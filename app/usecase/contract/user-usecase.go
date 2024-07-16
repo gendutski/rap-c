@@ -17,4 +17,6 @@ type UserUsecase interface {
 	GetUserByUsername(ctx context.Context, req *payloadentity.GetUserDetailRequest) (*databaseentity.User, error)
 	// update current user data
 	Update(ctx context.Context, payload *payloadentity.UpdateUserPayload, author *databaseentity.User) error
+	// update other user active status
+	UpdateActiveStatus(ctx context.Context, payload *payloadentity.ActiveStatusPayload, author *databaseentity.User) (*databaseentity.User, error)
 }

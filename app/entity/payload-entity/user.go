@@ -37,3 +37,8 @@ type UpdateUserPayload struct {
 	Password        string `json:"password" form:"password" validate:"omitempty,min=8"`
 	ConfirmPassword string `json:"confirmPassword" form:"confirmPassword" validate:"required_with=Password,eqfield=Password"`
 }
+
+type ActiveStatusPayload struct {
+	Username string `json:"username" form:"username" validate:"required"`
+	Disabled bool   `json:"disabled" form:"disabled"`
+}

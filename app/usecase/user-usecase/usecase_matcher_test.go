@@ -28,6 +28,9 @@ func (r *createMatcher) Matches(x interface{}) bool {
 	if req.Email != r.expected.Email {
 		return false
 	}
+	if req.Disabled != r.expected.Disabled {
+		return false
+	}
 	if req.PasswordMustChange != r.expected.PasswordMustChange {
 		return false
 	}

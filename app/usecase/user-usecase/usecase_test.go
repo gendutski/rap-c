@@ -195,3 +195,94 @@ func Test_Update(t *testing.T) {
 	})
 
 }
+
+func Test_UpdateActiveStatus(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	uc, userRepo := initUsecase(ctrl, &config.Config{})
+	ctx := context.Background()
+
+	author := &databaseentity.User{
+		Username: "gendutski",
+	}
+
+	t.Run("deactivating active user", func(t *testing.T) {
+		currentUser := &databaseentity.User{
+			Username: "other-user",
+			Password: "password",
+		}
+		userRepo.EXPECT().GetUserByField(ctx, "username", "other-user", 404).Return(currentUser, nil).Times(1)
+		userRepo.EXPECT().Update(ctx, CreateMatcher(&databaseentity.User{
+			Username:  "other-user",
+			Password:  "password",
+			Disabled:  true,
+			UpdatedBy: "gendutski",
+		})).Return(nil).Times(1)
+
+		res, err := uc.UpdateActiveStatus(ctx, &payloadentity.ActiveStatusPayload{
+			Username: "other-user",
+			Disabled: true,
+		}, author)
+		assert.Nil(t, err)
+		assert.True(t, res.Disabled)
+	})
+
+	t.Run("activating inactive user", func(t *testing.T) {
+		currentUser := &databaseentity.User{
+			Username: "other-user",
+			Password: "password",
+			Disabled: true,
+		}
+		userRepo.EXPECT().GetUserByField(ctx, "username", "other-user", 404).Return(currentUser, nil).Times(1)
+		userRepo.EXPECT().Update(ctx, CreateMatcher(&databaseentity.User{
+			Username:  "other-user",
+			Password:  "password",
+			Disabled:  false,
+			UpdatedBy: "gendutski",
+		})).Return(nil).Times(1)
+
+		res, err := uc.UpdateActiveStatus(ctx, &payloadentity.ActiveStatusPayload{
+			Username: "other-user",
+			Disabled: false,
+		}, author)
+		assert.Nil(t, err)
+		assert.False(t, res.Disabled)
+	})
+
+	t.Run("activating active user", func(t *testing.T) {
+		currentUser := &databaseentity.User{
+			Username: "other-user",
+			Password: "password",
+			Disabled: false,
+		}
+		userRepo.EXPECT().GetUserByField(ctx, "username", "other-user", 404).Return(currentUser, nil).Times(1)
+
+		_, err := uc.UpdateActiveStatus(ctx, &payloadentity.ActiveStatusPayload{
+			Username: "other-user",
+			Disabled: false,
+		}, author)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, herr.Code)
+		assert.Equal(t, entity.ActivatingActiveUser, herr.Internal.(*entity.InternalError).Code)
+	})
+
+	t.Run("deactivating inactive user", func(t *testing.T) {
+		currentUser := &databaseentity.User{
+			Username: "other-user",
+			Password: "password",
+			Disabled: true,
+		}
+		userRepo.EXPECT().GetUserByField(ctx, "username", "other-user", 404).Return(currentUser, nil).Times(1)
+
+		_, err := uc.UpdateActiveStatus(ctx, &payloadentity.ActiveStatusPayload{
+			Username: "other-user",
+			Disabled: true,
+		}, author)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, herr.Code)
+		assert.Equal(t, entity.DeactivatingInActiveUser, herr.Internal.(*entity.InternalError).Code)
+	})
+}

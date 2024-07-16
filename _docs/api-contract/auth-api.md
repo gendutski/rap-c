@@ -31,7 +31,6 @@
     - Error (non internal service error) Response:
         - Validator Bad Request (http status 400)
         ```json
-        // 
         {
             "code": 400999,
             "message": {
@@ -120,7 +119,6 @@
     - Error (non internal service error) Response:
         - Validator Bad Request (http status 400)
         ```json
-        // 
         {
             "code": 400999,
             "message": {
@@ -163,7 +161,6 @@
     - Error (non internal service error) Response:
         - Validator Bad Request (http status 400)
         ```json
-        // 
         {
             "code": 400999,
             "message": {
@@ -205,7 +202,6 @@
     - Error (non internal service error) Response:
         - Validator Bad Request (http status 400)
         ```json
-        // 
         {
             "code": 400999,
             "message": {

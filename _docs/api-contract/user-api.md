@@ -56,7 +56,7 @@
     {
         "username": "<string>",
         "email": "<string>",
-        "fullName": "<stringList of users that will be sorted based on the fields entered in sortField(default `createdAt`) in `asc` or `desc` (if `descendingOrder` = `true`)>",
+        "fullName": "<string>",
         "show": "<all|active|not active>",
         "sortField": "<username|fullName|email|createdAt|updatedAt>",
         "descendingOrder": <bool>,

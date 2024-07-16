@@ -254,7 +254,7 @@
         "disabled": <bool>
     }
     ```
-    - Response:
+    - Ok Response:
     ```json
     {
         "username": "<string>",
@@ -269,3 +269,30 @@
         "updatedBy": "<string>"
     }
     ```
+    - Error (non internal service error) Response:
+        - Validator Bad Request (http status 400)
+        ```json
+        {
+            "code": 400999,
+            "message": {
+                "username": [
+                    // username field must not empty
+                    {"tag": "required"}
+                ],
+            }
+        }
+        ```
+        - Deactivating Inactive User (http status 400)
+        ```json
+        {
+            "code": 400004,
+            "message": "try deactivating inactive users"
+        }
+        ```
+        - Activating Active User (http status 400)
+        ```json
+        {
+            "code": 400005,
+            "message": "try activating active users"
+        }
+        ```

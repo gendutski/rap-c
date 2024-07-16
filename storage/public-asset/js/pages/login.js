@@ -29,6 +29,11 @@ function formLoginLoading() {
     for (let i = 0; i < formGuest.elements.length; i++) {
         $(formGuest.elements[i]).attr("disabled", true);
     }
+
+    // disable forgot password
+    $('#forgotLink').on("click", function () {
+        return false;
+    }).addClass("text-muted");
 }
 
 function formLoginDone() {
@@ -49,6 +54,9 @@ function formLoginDone() {
     for (let i = 0; i < formGuest.elements.length; i++) {
         $(formGuest.elements[i]).removeAttr("disabled");
     }
+
+    // enable forgot password
+    $('#forgotLink').off("click").removeClass("text-muted");
 }
 
 function formGuestLoading() {
@@ -69,6 +77,11 @@ function formGuestLoading() {
                 addClass("spinner-border spinner-border-sm");
         }
     }
+
+    // disable forgot password
+    $('#forgotLink').on("click", function () {
+        return false;
+    }).addClass("text-muted");
 }
 
 function formGuestDone() {
@@ -89,6 +102,9 @@ function formGuestDone() {
                 addClass("fa-solid fa-masks-theater");
         }
     }
+
+    // enable forgot password
+    $('#forgotLink').off("click").removeClass("text-muted");
 }
 
 function submitLogin(form) {
@@ -106,7 +122,7 @@ function submitLogin(form) {
         // go to submit token page
         $('#formSubmitToken input[name="token"]').val(response.token);
         $('#formSubmitToken').submit();
-    }).fail(function ($jqXHR, $errorThrown) {
+    }).fail(function ($jqXHR) {
         formLoginDone();
         try {
             let response = JSON.parse($jqXHR.responseText);

@@ -41,7 +41,7 @@ func SetAPIRoute(e *echo.Echo, h *APIHandler) {
 }
 
 func (h *APIHandler) setAuthAPI(e *echo.Echo, nonGuestOnly []echo.MiddlewareFunc) {
-	// non login routes
+	// login routes
 	e.Add(h.Route.LoginAPI.Method(), h.Route.LoginAPI.Path(), h.AuthAPI.Login)
 	// guest login if enabled
 	e.Add(h.Route.GuestLoginAPI.Method(), h.Route.GuestLoginAPI.Path(), h.AuthAPI.GuestLogin)

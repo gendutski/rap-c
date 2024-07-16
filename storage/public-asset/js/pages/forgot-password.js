@@ -26,7 +26,7 @@ function ajaxLoading() {
 
     $('#loginLink').on('click', function () {
         return false;
-    });
+    }).addClass("text-muted");
 }
 
 function ajaxDone() {
@@ -42,9 +42,7 @@ function ajaxDone() {
         }
     }
 
-    $('#loginLink').on('click', function () {
-        return true;
-    });
+    $('#loginLink').off('click').removeClass("text-muted");
 }
 
 function submitForgot(form) {

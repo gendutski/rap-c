@@ -1,4 +1,4 @@
-{{define "layout.html"}}
+{{define "layout"}}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -30,7 +30,7 @@
     <div id="wrapper">
 
         <!-- Sidebar -->
-        {{template "sidebar-menu.html" .}}
+        {{template "sidebar" .}}
         <!-- End of Sidebar -->
 
         <!-- Content Wrapper -->
@@ -197,7 +197,7 @@
     <!-- Page level plugins -->
 
     <!-- Page level custom scripts -->
-
+    {{template "js" .}}
 </body>
 
 </html>

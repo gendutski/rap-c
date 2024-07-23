@@ -16,7 +16,7 @@ const (
 
 type Renderer struct {
 	autoReloadTemplate bool // not for production
-	keys               map[string][][]string
+	keys               map[string]*TemplateMaper
 	templates          map[string]*Templates
 }
 
@@ -25,17 +25,77 @@ type Templates struct {
 	ExecuteTemplate string
 }
 
+type TemplateMaper struct {
+	Files           []string
+	ExecuteTemplate string
+}
+
+var funcMap = template.FuncMap{
+	"partialExists": func(name string, t *template.Template) bool {
+		return t.Lookup(name) != nil
+	},
+}
+
 func NewRenderer(autoReloadTemplate bool) (*Renderer, error) {
-	keys := map[string][][]string{
-		"401.html":             {{"401.html"}},
-		"404.html":             {{"404.html"}},
-		"error.html":           {{"error.html"}},
-		"login.html":           {{"login.html"}},
-		"pass-changer.html":    {{"pass-changer.html"}},
-		"forgot-password.html": {{"forgot-password.html"}},
-		"reset-password.html":  {{"reset-password.html"}},
-		"profile.html":         {{"layouts", "layout.html"}, {"layouts", "sidebar-menu.html"}, {"profile", "index.html"}},
-		"dashboard.html":       {{"layouts", "layout.html"}, {"layouts", "sidebar-menu.html"}, {"dashboard", "index.html"}},
+	keys := map[string]*TemplateMaper{
+		"401.html": {
+			Files: []string{
+				filepath.Join(storagePath, templatePath, "401.html"),
+			},
+			ExecuteTemplate: "index",
+		},
+		"404.html": {
+			Files: []string{
+				filepath.Join(storagePath, templatePath, "404.html"),
+			},
+			ExecuteTemplate: "index",
+		},
+		"error.html": {
+			Files: []string{
+				filepath.Join(storagePath, templatePath, "error.html"),
+			},
+			ExecuteTemplate: "index",
+		},
+		"login.html": {
+			Files: []string{
+				filepath.Join(storagePath, templatePath, "login.html"),
+			},
+			ExecuteTemplate: "index",
+		},
+		"pass-changer.html": {
+			Files: []string{
+				filepath.Join(storagePath, templatePath, "pass-changer.html"),
+			},
+			ExecuteTemplate: "index",
+		},
+		"forgot-password.html": {
+			Files: []string{
+				filepath.Join(storagePath, templatePath, "forgot-password.html"),
+			},
+			ExecuteTemplate: "index",
+		},
+		"reset-password.html": {
+			Files: []string{
+				filepath.Join(storagePath, templatePath, "reset-password.html"),
+			},
+			ExecuteTemplate: "index",
+		},
+		"profile": {
+			Files: []string{
+				filepath.Join(storagePath, templatePath, "layouts", "layout.html"),
+				filepath.Join(storagePath, templatePath, "layouts", "sidebar-menu.html"),
+				filepath.Join(storagePath, templatePath, "profile", "index.html"),
+			},
+			ExecuteTemplate: "layout",
+		},
+		"dashboard": {
+			Files: []string{
+				filepath.Join(storagePath, templatePath, "layouts", "layout.html"),
+				filepath.Join(storagePath, templatePath, "layouts", "sidebar-menu.html"),
+				filepath.Join(storagePath, templatePath, "dashboard", "index.html"),
+			},
+			ExecuteTemplate: "layout",
+		},
 	}
 
 	templates, err := loadTemplates(keys)
@@ -45,28 +105,19 @@ func NewRenderer(autoReloadTemplate bool) (*Renderer, error) {
 	return &Renderer{autoReloadTemplate: autoReloadTemplate, keys: keys, templates: templates}, nil
 }
 
-func loadTemplates(keys map[string][][]string) (map[string]*Templates, error) {
+func loadTemplates(keys map[string]*TemplateMaper) (map[string]*Templates, error) {
 	templates := make(map[string]*Templates)
 	for key, values := range keys {
-		if len(values) == 0 {
-			continue
-		}
-
-		var files []string
-		for _, v := range values {
-			_path := []string{storagePath, templatePath}
-			_path = append(_path, v...)
-			files = append(files, filepath.Join(_path...))
-		}
-
-		tmpl, err := template.ParseFiles(files...)
+		tmpl, err := template.New(values.ExecuteTemplate).
+			Funcs(funcMap).
+			ParseFiles(values.Files...)
 		if err != nil {
 			return nil, err
 		}
 
 		templates[key] = &Templates{
 			Template:        tmpl,
-			ExecuteTemplate: values[0][len(values[0])-1:][0], // first template will get execute
+			ExecuteTemplate: values.ExecuteTemplate,
 		}
 	}
 	return templates, nil
@@ -88,8 +139,8 @@ func (r *Renderer) Render(
 	}
 
 	if tmpl, ok := r.templates[name]; ok {
-		// err = tmpl.Template.ExecuteTemplate(w, tmpl.ExecuteTemplate, data)
-		err = tmpl.Template.Execute(w, data)
+		err = tmpl.Template.ExecuteTemplate(w, tmpl.ExecuteTemplate, data)
+		// err = tmpl.Template.Execute(w, data)
 		if err != nil {
 			return fmt.Errorf("failed render template: %s", err.Error())
 		}

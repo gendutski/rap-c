@@ -47,7 +47,7 @@ func (h *userHandler) Profile(e echo.Context) error {
 		return err
 	}
 
-	return e.Render(http.StatusOK, "profile.html", map[string]interface{}{
+	return e.Render(http.StatusOK, "profile", map[string]interface{}{
 		"author":           author,
 		"token":            token,
 		"title":            "Profile",

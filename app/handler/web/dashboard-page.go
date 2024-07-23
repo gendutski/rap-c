@@ -43,7 +43,7 @@ func (h *dashboardHandler) Dashboard(e echo.Context) error {
 		return err
 	}
 
-	return e.Render(http.StatusOK, "dashboard.html", map[string]interface{}{
+	return e.Render(http.StatusOK, "dashboard", map[string]interface{}{
 		"author":  author,
 		"token":   token,
 		"title":   "Dashboard",

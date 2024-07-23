@@ -25,6 +25,7 @@ type Layouts struct {
 	Copyright    string
 	LogoutPath   string
 	LogoutMethod string
+	ProfilePath  string
 	SidebarMenus []*SidebarMenu
 }
 
@@ -77,6 +78,7 @@ func (h *BaseHandler) GetLayouts(activeMenu string) *Layouts {
 		Copyright:    h.GetCopyright(),
 		LogoutPath:   h.cfg.URL(h.router.LogoutWebPage.Path()),
 		LogoutMethod: h.router.LogoutWebPage.Method(),
+		ProfilePath:  h.cfg.URL(h.router.ProfileWebPage.Path()),
 		SidebarMenus: h.GetSidebarMenu(activeMenu),
 	}
 }

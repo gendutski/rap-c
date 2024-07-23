@@ -30,3 +30,4 @@ Cara untuk berkontribusi pada pengembangan aplikasi ini...
 ## Lisensi
 [Creative Commons Attribution-NoDerivatives 4.0 International Public License](LICENSE.md)
 
+test

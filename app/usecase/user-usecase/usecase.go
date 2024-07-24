@@ -50,6 +50,14 @@ func (uc *usecase) Create(ctx context.Context, payload *payloadentity.CreateUser
 	}
 
 	// set payload & result
+	token, err := helper.GenerateToken(64)
+	if err != nil {
+		return nil, "", &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.HelperGenerateTokenError, err.Error()),
+		}
+	}
 	user := databaseentity.User{
 		Username:           payload.Username,
 		FullName:           payload.FullName,
@@ -57,6 +65,7 @@ func (uc *usecase) Create(ctx context.Context, payload *payloadentity.CreateUser
 		Password:           encryptPassword,
 		PasswordMustChange: true,
 		IsGuest:            payload.IsGuest,
+		Token:              token,
 		CreatedBy:          author.Username,
 		UpdatedBy:          author.Username,
 	}

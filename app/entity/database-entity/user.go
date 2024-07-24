@@ -21,6 +21,7 @@ type User struct {
 	PasswordMustChange bool      `gorm:"not null;default:0" json:"passwordMustChange"`
 	Disabled           bool      `gorm:"not null;default:0" json:"disabled"`
 	IsGuest            bool      `gorm:"not null;default:0" json:"isGuest"`
+	Token              string    `gorm:"not null" json:"-"`
 	CreatedAt          time.Time `gorm:"type:timestamp;default:CURRENT_TIMESTAMP;not null" json:"createdAt"`
 	CreatedBy          string    `gorm:"size:30;not null;default:'SYSTEM'" json:"createdBy"`
 	UpdatedAt          time.Time `gorm:"type:timestamp;default:CURRENT_TIMESTAMP;not null" json:"updatedAt"`

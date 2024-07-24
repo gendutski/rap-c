@@ -157,12 +157,18 @@ func migrateDB(cfg *config.Config, db *gorm.DB) {
 			fmt.Println(err)
 			os.Exit(1)
 		}
+		token, err := helper.GenerateToken(64)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 		user := databaseentity.User{
 			Username:           cfg.FirstUserUsername(),
 			FullName:           cfg.FirstUserFullName(),
 			Email:              cfg.FirstUserEmail(),
 			Password:           pass,
 			PasswordMustChange: true,
+			Token:              token,
 			CreatedBy:          config.SystemUsername,
 			UpdatedBy:          config.SystemUsername,
 		}
@@ -191,12 +197,18 @@ func migrateDB(cfg *config.Config, db *gorm.DB) {
 				fmt.Println(err)
 				os.Exit(1)
 			}
+			token, err := helper.GenerateToken(64)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 			user := databaseentity.User{
 				Username:  config.GuestUsername,
 				FullName:  config.GuestUsername,
 				Email:     config.GuestEmail,
 				Password:  pass,
 				IsGuest:   true,
+				Token:     token,
 				CreatedBy: config.SystemUsername,
 				UpdatedBy: config.SystemUsername,
 			}

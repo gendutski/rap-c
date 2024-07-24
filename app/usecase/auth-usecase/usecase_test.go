@@ -203,12 +203,14 @@ func Test_ValidateJwtToken(t *testing.T) {
 		ID:       1,
 		Username: "gendutski",
 		Email:    "gendutski@gmail.com",
+		Token:    "token",
 	}
 	validGuest := &databaseentity.User{
 		ID:       2,
 		Username: "guest",
 		Email:    "guest@gmail.com",
 		IsGuest:  true,
+		Token:    "token",
 	}
 
 	t.Run("success guest", func(t *testing.T) {
@@ -218,6 +220,7 @@ func Test_ValidateJwtToken(t *testing.T) {
 			"id":       2,
 			"username": "guest",
 			"email":    "guest@gmail.com",
+			"secret":   "token",
 			"exp":      time.Now().Add(time.Hour).Unix(),
 		}), true)
 		assert.Nil(t, err)
@@ -231,18 +234,76 @@ func Test_ValidateJwtToken(t *testing.T) {
 			"id":       1,
 			"username": "gendutski",
 			"email":    "gendutski@gmail.com",
+			"secret":   "token",
 			"exp":      time.Now().Add(time.Hour).Unix(),
 		}), true)
 		assert.Nil(t, err)
 		assert.Equal(t, validUser, res)
 	})
 
-	t.Run("token not match", func(t *testing.T) {
+	t.Run("token not match, no claims found", func(t *testing.T) {
+		_, err := uc.ValidateJwtToken(ctx, jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{}), true)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusInternalServerError, herr.Code)
+		assert.Equal(t, entity.AuthUsecaseValidateJwtTokenError, herr.Internal.(*entity.InternalError).Code)
+	})
+
+	t.Run("token not match, email not included", func(t *testing.T) {
+		_, err := uc.ValidateJwtToken(ctx, jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"id":       1,
+			"username": "guest",
+			"secret":   "token",
+			"exp":      time.Now().Add(time.Hour).Unix(),
+		}), true)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusInternalServerError, herr.Code)
+		assert.Equal(t, entity.AuthUsecaseValidateJwtTokenError, herr.Internal.(*entity.InternalError).Code)
+	})
+
+	t.Run("token not match, id not match", func(t *testing.T) {
 		authRepo.EXPECT().GetUserByEmail(ctx, "guest@gmail.com").Return(validGuest, nil).Times(1)
 
 		_, err := uc.ValidateJwtToken(ctx, jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"id":       1,
-			"username": "gendutski",
+			"username": "guest",
+			"email":    "guest@gmail.com",
+			"secret":   "token",
+			"exp":      time.Now().Add(time.Hour).Unix(),
+		}), true)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusUnauthorized, herr.Code)
+		assert.Equal(t, entity.ValidateTokenFailed, herr.Internal.(*entity.InternalError).Code)
+	})
+
+	t.Run("token not match, username not match", func(t *testing.T) {
+		authRepo.EXPECT().GetUserByEmail(ctx, "guest@gmail.com").Return(validGuest, nil).Times(1)
+
+		_, err := uc.ValidateJwtToken(ctx, jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"id":       2,
+			"username": "tamu",
+			"email":    "guest@gmail.com",
+			"secret":   "token",
+			"exp":      time.Now().Add(time.Hour).Unix(),
+		}), true)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusUnauthorized, herr.Code)
+		assert.Equal(t, entity.ValidateTokenFailed, herr.Internal.(*entity.InternalError).Code)
+	})
+
+	t.Run("token not match, secret not match", func(t *testing.T) {
+		authRepo.EXPECT().GetUserByEmail(ctx, "guest@gmail.com").Return(validGuest, nil).Times(1)
+
+		_, err := uc.ValidateJwtToken(ctx, jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"id":       2,
+			"username": "guest",
 			"email":    "guest@gmail.com",
 			"exp":      time.Now().Add(time.Hour).Unix(),
 		}), true)
@@ -260,6 +321,7 @@ func Test_ValidateJwtToken(t *testing.T) {
 			"id":       2,
 			"username": "guest",
 			"email":    "guest@gmail.com",
+			"secret":   "token",
 			"exp":      time.Now().Add(time.Hour).Unix(),
 		}), false)
 		assert.NotNil(t, err)

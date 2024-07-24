@@ -17,9 +17,10 @@ import (
 )
 
 const (
-	tokenStrID    string = "id"
-	tokenStrName  string = "username"
-	tokenStrEmail string = "email"
+	tokenStrID     string = "id"
+	tokenStrName   string = "username"
+	tokenStrEmail  string = "email"
+	tokenStrSecret string = "secret"
 )
 
 func NewUsecase(cfg *config.Config, authRepo contract.AuthRepository) usecasecontract.AuthUsecase {
@@ -79,10 +80,11 @@ func (uc *usecase) GenerateJwtToken(ctx context.Context, user *databaseentity.Us
 		exp = time.Now().Add(time.Hour * 24 * time.Duration(uc.cfg.JwtRememberInDays())).Unix()
 	}
 	claims := jwt.MapClaims{
-		tokenStrID:    user.ID,
-		tokenStrName:  user.Username,
-		tokenStrEmail: user.Email,
-		"exp":         exp,
+		tokenStrID:     user.ID,
+		tokenStrName:   user.Username,
+		tokenStrEmail:  user.Email,
+		tokenStrSecret: user.Token,
+		"exp":          exp,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -109,7 +111,15 @@ func (uc *usecase) ValidateJwtToken(ctx context.Context, token *jwt.Token, guest
 	}
 
 	// get user
-	email, ok := claims[tokenStrEmail].(string)
+	holderEmail, ok := claims[tokenStrEmail]
+	if !ok {
+		return nil, &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.AuthUsecaseValidateJwtTokenError, "jwt claims email not found"),
+		}
+	}
+	email, ok := holderEmail.(string)
 	if !ok {
 		return nil, &echo.HTTPError{
 			Code:     http.StatusInternalServerError,
@@ -124,17 +134,34 @@ func (uc *usecase) ValidateJwtToken(ctx context.Context, token *jwt.Token, guest
 
 	// check user
 	var validUserID bool
-	switch t := claims[tokenStrID].(type) {
-	case int:
-		validUserID = t == user.ID
-	case int64:
-		validUserID = t == int64(user.ID)
-	case float32:
-		validUserID = t == float32(user.ID)
-	case float64:
-		validUserID = t == float64(user.ID)
+	// validate user id
+	if holder, ok := claims[tokenStrID]; ok {
+		switch t := holder.(type) {
+		case int:
+			validUserID = t == user.ID
+		case int64:
+			validUserID = t == int64(user.ID)
+		case float32:
+			validUserID = t == float32(user.ID)
+		case float64:
+			validUserID = t == float64(user.ID)
+		}
 	}
-	if user.Username != claims[tokenStrName].(string) || !validUserID || user.Disabled {
+	// validate username
+	var validUsername bool
+	if holder, ok := claims[tokenStrName]; ok {
+		if username, ok := holder.(string); ok && user.Username == username {
+			validUsername = true
+		}
+	}
+	// validate user secret token
+	var validSecretToken bool
+	if holder, ok := claims[tokenStrSecret]; ok {
+		if secretk, ok := holder.(string); ok && user.Token == secretk {
+			validSecretToken = true
+		}
+	}
+	if !validUsername || !validSecretToken || !validUserID || user.Disabled {
 		return nil, &echo.HTTPError{
 			Code:     http.StatusUnauthorized,
 			Message:  entity.ValidateTokenFailedMessage,

@@ -18,6 +18,7 @@ func (r *createMatcher) Matches(x interface{}) bool {
 		return false
 	}
 	r.expected.Password = req.Password
+	r.expected.Token = req.Token
 	// validate each field except Password
 	if req.Username != r.expected.Username {
 		return false
@@ -46,6 +47,11 @@ func (r *createMatcher) Matches(x interface{}) bool {
 	// validate password, password is auto generated, so check if not empty only
 	if req.Password == "" {
 		r.want = "password not empty"
+		return false
+	}
+	// validate token, token is auto generated, so check if not empty only
+	if req.Token == "" {
+		r.want = "token not empty"
 		return false
 	}
 	return true

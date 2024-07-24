@@ -72,7 +72,7 @@ func (e RapCLog) Log() {
 		}
 
 		if e.status < http.StatusInternalServerError {
-			if e.logMode != config.LogModeErrorAndWarnOnly {
+			if e.logMode != config.LogModeErrorAndWarnOnly && e.logMode != config.LogModeAll {
 				return
 			}
 

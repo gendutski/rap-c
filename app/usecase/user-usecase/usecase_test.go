@@ -129,6 +129,7 @@ func Test_Update(t *testing.T) {
 			FullName: "Firman Darmawan",
 			Email:    "gendutski@gmail.com",
 			Password: "password",
+			Token:    "token",
 		}
 
 		userRepo.EXPECT().Update(ctx, CreateMatcher(&databaseentity.User{
@@ -161,6 +162,7 @@ func Test_Update(t *testing.T) {
 			FullName: "Firman Darmawan",
 			Email:    "gendutski@gmail.com",
 			Password: "password",
+			Token:    "token",
 		}
 
 		err := uc.Update(ctx, &payloadentity.UpdateUserPayload{}, author)
@@ -177,6 +179,7 @@ func Test_Update(t *testing.T) {
 			FullName: "Firman Darmawan",
 			Email:    "gendutski@gmail.com",
 			Password: "password",
+			Token:    "token",
 		}
 
 		err := uc.Update(ctx, &payloadentity.UpdateUserPayload{
@@ -209,6 +212,7 @@ func Test_UpdateActiveStatus(t *testing.T) {
 		currentUser := &databaseentity.User{
 			Username: "other-user",
 			Password: "password",
+			Token:    "token",
 		}
 		userRepo.EXPECT().GetUserByField(ctx, "username", "other-user", 404).Return(currentUser, nil).Times(1)
 		userRepo.EXPECT().Update(ctx, CreateMatcher(&databaseentity.User{
@@ -231,6 +235,7 @@ func Test_UpdateActiveStatus(t *testing.T) {
 			Username: "other-user",
 			Password: "password",
 			Disabled: true,
+			Token:    "token",
 		}
 		userRepo.EXPECT().GetUserByField(ctx, "username", "other-user", 404).Return(currentUser, nil).Times(1)
 		userRepo.EXPECT().Update(ctx, CreateMatcher(&databaseentity.User{
@@ -253,6 +258,7 @@ func Test_UpdateActiveStatus(t *testing.T) {
 			Username: "other-user",
 			Password: "password",
 			Disabled: false,
+			Token:    "token",
 		}
 		userRepo.EXPECT().GetUserByField(ctx, "username", "other-user", 404).Return(currentUser, nil).Times(1)
 
@@ -272,6 +278,7 @@ func Test_UpdateActiveStatus(t *testing.T) {
 			Username: "other-user",
 			Password: "password",
 			Disabled: true,
+			Token:    "token",
 		}
 		userRepo.EXPECT().GetUserByField(ctx, "username", "other-user", 404).Return(currentUser, nil).Times(1)
 

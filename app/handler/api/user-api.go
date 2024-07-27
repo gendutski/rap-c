@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"rap-c/app/entity"
 	payloadentity "rap-c/app/entity/payload-entity"
+	responseentity "rap-c/app/entity/response-entity"
 	"rap-c/app/handler"
 	"rap-c/app/usecase/contract"
 	"rap-c/config"
@@ -27,22 +28,25 @@ type UserAPI interface {
 	SetActiveStatusUser(e echo.Context) error
 }
 
-func NewUserHandler(cfg *config.Config, router *config.Route, userUsecase contract.UserUsecase, mailUsecase contract.MailUsecase) UserAPI {
+func NewUserHandler(cfg *config.Config, router *config.Route,
+	userUsecase contract.UserUsecase, formatterUsecase contract.FormatterUsecase, mailUsecase contract.MailUsecase) UserAPI {
 	return &userHandler{
-		cfg:         cfg,
-		router:      router,
-		userUsecase: userUsecase,
-		mailUsecase: mailUsecase,
-		BaseHandler: handler.NewBaseHandler(cfg, router),
+		cfg:              cfg,
+		router:           router,
+		userUsecase:      userUsecase,
+		formatterUsecase: formatterUsecase,
+		mailUsecase:      mailUsecase,
+		BaseHandler:      handler.NewBaseHandler(cfg, router),
 	}
 }
 
 type userHandler struct {
-	cfg         *config.Config
-	router      *config.Route
-	userUsecase contract.UserUsecase
-	mailUsecase contract.MailUsecase
-	BaseHandler *handler.BaseHandler
+	cfg              *config.Config
+	router           *config.Route
+	userUsecase      contract.UserUsecase
+	formatterUsecase contract.FormatterUsecase
+	mailUsecase      contract.MailUsecase
+	BaseHandler      *handler.BaseHandler
 }
 
 func (h *userHandler) Create(e echo.Context) error {
@@ -94,7 +98,11 @@ func (h *userHandler) Create(e echo.Context) error {
 		}
 	}()
 
-	return e.JSON(http.StatusOK, user)
+	resp, err := h.formatterUsecase.FormatUser(ctx, user, map[int]string{author.ID: author.Username})
+	if err != nil {
+		return err
+	}
+	return e.JSON(http.StatusOK, resp)
 }
 
 func (h *userHandler) GetUserList(e echo.Context) error {
@@ -114,9 +122,13 @@ func (h *userHandler) GetUserList(e echo.Context) error {
 		return err
 	}
 
-	return e.JSON(http.StatusOK, map[string]interface{}{
-		"users":   users,
-		"request": req,
+	resp, err := h.formatterUsecase.FormatUsers(ctx, users)
+	if err != nil {
+		return err
+	}
+	return e.JSON(http.StatusOK, &responseentity.GetUserListResponse{
+		Users:   resp,
+		Request: req,
 	})
 }
 
@@ -160,7 +172,11 @@ func (h *userHandler) GetUserDetailByUsername(e echo.Context) error {
 		return err
 	}
 
-	return e.JSON(http.StatusOK, user)
+	resp, err := h.formatterUsecase.FormatUser(ctx, user, nil)
+	if err != nil {
+		return err
+	}
+	return e.JSON(http.StatusOK, resp)
 }
 
 func (h *userHandler) Update(e echo.Context) error {
@@ -212,7 +228,11 @@ func (h *userHandler) Update(e echo.Context) error {
 		}
 	}()
 
-	return e.JSON(http.StatusOK, author)
+	resp, err := h.formatterUsecase.FormatUser(ctx, author, map[int]string{author.ID: author.Username})
+	if err != nil {
+		return err
+	}
+	return e.JSON(http.StatusOK, resp)
 }
 
 func (h *userHandler) SetActiveStatusUser(e echo.Context) error {
@@ -264,5 +284,9 @@ func (h *userHandler) SetActiveStatusUser(e echo.Context) error {
 		}
 	}()
 
-	return e.JSON(http.StatusOK, user)
+	resp, err := h.formatterUsecase.FormatUser(ctx, user, nil)
+	if err != nil {
+		return err
+	}
+	return e.JSON(http.StatusOK, resp)
 }

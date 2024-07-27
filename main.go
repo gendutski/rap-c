@@ -13,6 +13,7 @@ import (
 	authrepository "rap-c/app/repository/mysql/auth-repository"
 	userrepository "rap-c/app/repository/mysql/user-repository"
 	authusecase "rap-c/app/usecase/auth-usecase"
+	formatterusecase "rap-c/app/usecase/formatter-usecase"
 	mailusecase "rap-c/app/usecase/mail-usecase"
 	sessionusecase "rap-c/app/usecase/session-usecase"
 	userusecase "rap-c/app/usecase/user-usecase"
@@ -62,10 +63,11 @@ func serve() {
 	userUsecase := userusecase.NewUsecase(cfg, userRepo)
 	mailUsecase := mailusecase.NewUsecase(cfg, router)
 	sessionUsecase := sessionusecase.NewUsecase(cfg, router, sessionStore, authUsecase)
+	formatterUsecase := formatterusecase.NewUsecase(cfg, userRepo)
 
 	// load api handler
 	authAPI := api.NewAuthHandler(cfg, router, authUsecase, mailUsecase)
-	userAPI := api.NewUserHandler(cfg, router, userUsecase, mailUsecase)
+	userAPI := api.NewUserHandler(cfg, router, userUsecase, formatterUsecase, mailUsecase)
 
 	// load web handler
 	authWeb := web.NewAuthPage(cfg, router, authUsecase, sessionUsecase, mailUsecase)
@@ -169,8 +171,6 @@ func migrateDB(cfg *config.Config, db *gorm.DB) {
 			Password:           pass,
 			PasswordMustChange: true,
 			Token:              token,
-			CreatedBy:          config.SystemUsername,
-			UpdatedBy:          config.SystemUsername,
 		}
 		err = db.Save(&user).Error
 		if err != nil {
@@ -203,14 +203,12 @@ func migrateDB(cfg *config.Config, db *gorm.DB) {
 				os.Exit(1)
 			}
 			user := databaseentity.User{
-				Username:  config.GuestUsername,
-				FullName:  config.GuestUsername,
-				Email:     config.GuestEmail,
-				Password:  pass,
-				IsGuest:   true,
-				Token:     token,
-				CreatedBy: config.SystemUsername,
-				UpdatedBy: config.SystemUsername,
+				Username: config.GuestUsername,
+				FullName: config.GuestUsername,
+				Email:    config.GuestEmail,
+				Password: pass,
+				IsGuest:  true,
+				Token:    token,
 			}
 			err = db.Save(&user).Error
 			if err != nil {

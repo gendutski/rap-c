@@ -11,5 +11,6 @@ type Transaction struct {
 	Amount      float32   `gorm:"not null;type:decimal(10,2);default:0" json:"amount"`
 	Description string    `gorm:"type:text;null" json:"description"`
 	CreatedAt   time.Time `gorm:"type:timestamp;default:CURRENT_TIMESTAMP;not null" json:"createdAt"`
-	CreatedBy   string    `gorm:"size:30;not null;default:'SYSTEM'" json:"createdBy"`
+	CreatedByDB int       `gorm:"column:created_by;not null;default:0" json:"-"`
+	CreatedBy   string    `gorm:"-" json:"createdBy"`
 }

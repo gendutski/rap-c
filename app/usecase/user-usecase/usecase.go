@@ -66,8 +66,8 @@ func (uc *usecase) Create(ctx context.Context, payload *payloadentity.CreateUser
 		PasswordMustChange: true,
 		IsGuest:            payload.IsGuest,
 		Token:              token,
-		CreatedBy:          author.Username,
-		UpdatedBy:          author.Username,
+		CreatedByDB:        author.ID,
+		UpdatedByDB:        author.ID,
 	}
 
 	// save
@@ -142,10 +142,14 @@ func (uc *usecase) Update(ctx context.Context, payload *payloadentity.UpdateUser
 		isModified = true
 	}
 	if isModified {
-		author.UpdatedBy = author.Username
+		author.UpdatedByDB = author.ID
 		return uc.userRepo.Update(ctx, author)
 	}
-	return nil
+	return &echo.HTTPError{
+		Code:     http.StatusConflict,
+		Message:  entity.UpdateUserNoChangeMessage,
+		Internal: entity.NewInternalError(entity.UpdateUserNoChange, entity.UpdateUserNoChangeMessage),
+	}
 }
 
 func (uc *usecase) UpdateActiveStatus(ctx context.Context, payload *payloadentity.ActiveStatusPayload, author *databaseentity.User) (*databaseentity.User, error) {
@@ -180,7 +184,7 @@ func (uc *usecase) UpdateActiveStatus(ctx context.Context, payload *payloadentit
 
 	// update user
 	user.Disabled = payload.Disabled
-	user.UpdatedBy = author.Username
+	user.UpdatedByDB = author.ID
 	err = uc.userRepo.Update(ctx, user)
 	if err != nil {
 		return nil, err

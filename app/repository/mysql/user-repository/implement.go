@@ -170,6 +170,41 @@ func (r *repo) GetUsersByRequest(ctx context.Context, req *payloadentity.GetUser
 	return result, nil
 }
 
+func (r *repo) MapUserUsername(ctx context.Context, payload interface{}) (map[int]string, error) {
+	var userIDs []int
+	switch users := payload.(type) {
+	case []*databaseentity.User:
+		for _, usr := range users {
+			userIDs = append(userIDs, usr.ID)
+		}
+	case *databaseentity.User:
+		userIDs = append(userIDs, users.ID)
+	case []int:
+		userIDs = users
+	default:
+		return nil, &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Message:  http.StatusText(http.StatusInternalServerError),
+			Internal: entity.NewInternalError(entity.UserRepoMapUserUsernameError, "invalid assertion"),
+		}
+	}
+
+	var users []*databaseentity.User
+	err := r.db.Where("id in ?", userIDs).
+		Distinct("id", "username").
+		Find(&users).
+		Error
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[int]string)
+	for _, usr := range users {
+		result[usr.ID] = usr.Username
+	}
+	return result, nil
+}
+
 func (r *repo) renderUsersQuery(req *payloadentity.GetUserListRequest) *gorm.DB {
 	qry := r.db
 	if req.UserName != "" {

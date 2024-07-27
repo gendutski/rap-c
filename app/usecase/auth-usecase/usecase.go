@@ -269,7 +269,7 @@ func (uc *usecase) SubmitResetPassword(ctx context.Context, payload *payloadenti
 
 	// update user
 	user.Password = encryptPass
-	user.UpdatedBy = user.Username
+	user.UpdatedByDB = user.ID
 
 	// update reset token
 	reset.Token = ""

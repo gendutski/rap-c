@@ -17,9 +17,11 @@ type Recipe struct {
 	ExpectedProfit      int       `gorm:"not null;default:0" json:"expectedProfit"`
 	SellingPrice        float32   `gorm:"-" json:"sellingPrice"`
 	CreatedAt           time.Time `gorm:"type:timestamp;default:CURRENT_TIMESTAMP;not null" json:"createdAt"`
-	CreatedBy           string    `gorm:"size:30;not null;default:'SYSTEM'" json:"createdBy"`
+	CreatedByDB         int       `gorm:"column:created_by;not null;default:0" json:"-"`
+	CreatedBy           string    `gorm:"-" json:"createdBy"`
 	UpdatedAt           time.Time `gorm:"type:timestamp;default:CURRENT_TIMESTAMP;not null" json:"updatedAt"`
-	UpdatedBy           string    `gorm:"size:30;not null;default:'SYSTEM'" json:"updatedBy"`
+	UpdatedByDB         int       `gorm:"column:updated_by;not null;default:0" json:"-"`
+	UpdatedBy           string    `gorm:"-" json:"updatedBy"`
 }
 
 func (e *Recipe) SetSellingPrice() {

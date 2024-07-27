@@ -17,4 +17,6 @@ type UserRepository interface {
 	GetTotalUsersByRequest(ctx context.Context, req *payloadentity.GetUserListRequest) (int64, error)
 	// get users by request param
 	GetUsersByRequest(ctx context.Context, req *payloadentity.GetUserListRequest) ([]*databaseentity.User, error)
+	// map user username by id
+	MapUserUsername(ctx context.Context, userIDs interface{}) (map[int]string, error)
 }

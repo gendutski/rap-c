@@ -91,7 +91,7 @@ func (r *repo) DoRenewPassword(ctx context.Context, user *databaseentity.User, p
 
 	user.Password = encryptPassword
 	user.PasswordMustChange = false
-	user.UpdatedBy = user.Username
+	user.UpdatedByDB = user.ID
 	err = r.db.Save(user).Error
 	if err != nil {
 		return &echo.HTTPError{
@@ -175,7 +175,7 @@ func (r *repo) ValidateResetToken(ctx context.Context, payload *payloadentity.Va
 		}
 	}
 	// validate token & expired date
-	if (result.Token != "" && result.Token != payload.Token) || time.Now().After(result.UpdatedAt.Add(resetTokenExpiration)) {
+	if result.Token == "" || result.Token != payload.Token || time.Now().After(result.UpdatedAt.Add(resetTokenExpiration)) {
 		return nil, &echo.HTTPError{
 			Code:     http.StatusNotFound,
 			Message:  entity.ResetPasswordRequestNotFoundMessage,

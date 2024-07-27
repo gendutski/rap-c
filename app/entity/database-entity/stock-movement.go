@@ -11,5 +11,6 @@ type StockMovement struct {
 	Quantity     int         `gorm:"not null;default:0" json:"quantity"`
 	Description  string      `gorm:"size:100;null" json:"description"`
 	CreatedAt    time.Time   `gorm:"type:timestamp;default:CURRENT_TIMESTAMP;not null" json:"createdAt"`
-	CreatedBy    string      `gorm:"size:30;not null;default:'SYSTEM'" json:"createdBy"`
+	CreatedByDB  int         `gorm:"column:created_by;not null;default:0" json:"-"`
+	CreatedBy    string      `gorm:"-" json:"createdBy"`
 }

@@ -47,6 +47,10 @@ const (
 	SearchSingleUserNotFOund            int    = 404002
 	SearchSingleUserNotFOundMessage     string = "user with `%s` = `%s` not found"
 
+	// conflict
+	UpdateUserNoChange        int    = 409001
+	UpdateUserNoChangeMessage string = "no change found"
+
 	// internal service error
 	// auth repository
 	AuthRepoGetUserLoginError              int = 5000101
@@ -60,12 +64,15 @@ const (
 	UserRepoGetUserByFieldError         int = 5000203
 	UserRepoGetTotalUsersByRequestError int = 5000204
 	UserRepoGetUsersByRequestError      int = 5000205
+	UserRepoMapUserUsernameError        int = 5000206
 	// auth usecase
 	AuthUsecaseGenerateJwtTokenError int = 5003001
 	AuthUsecaseValidateJwtTokenError int = 5003002
 	// mail usecase
 	MailUsecaseGenerateHTMLError      int = 5003101
 	MailUsecaseGeneratePlainTextError int = 5003102
+	// formatter usecase
+	FormatterUsecaseFormatUserError int = 5003201
 	// session usecase
 	SessionUsecaseTokenInvalidType  int = 5003201
 	SessionUsecaseErrorInvalidType  int = 5003202

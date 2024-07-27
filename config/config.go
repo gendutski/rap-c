@@ -14,7 +14,6 @@ import (
 )
 
 const (
-	SystemUsername        string = "SYSTEM"
 	GuestUsername         string = "Guest"
 	GuestEmail            string = "guest@example.com"
 	GuestPassword         string = "$GuestP@ssw0rD!"

@@ -35,15 +35,15 @@ func Test_Create(t *testing.T) {
 			FullName:           "Firman Darmawan",
 			Email:              "mvp.firman.darmawan@gmail.com",
 			PasswordMustChange: true,
-			CreatedBy:          "SYSTEM",
-			UpdatedBy:          "SYSTEM",
+			CreatedByDB:        1,
+			UpdatedByDB:        1,
 		})).Return(nil).Times(1)
 
 		res, pass, err := uc.Create(ctx, &payloadentity.CreateUserPayload{
 			Username: "gendutski",
 			FullName: "Firman Darmawan",
 			Email:    "mvp.firman.darmawan@gmail.com",
-		}, &databaseentity.User{Username: "SYSTEM"})
+		}, &databaseentity.User{ID: 1})
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
 		assert.True(t, helper.ValidateEncryptedPassword(res.Password, pass))
@@ -56,8 +56,8 @@ func Test_Create(t *testing.T) {
 			Email:              "mvp.firman.darmawan@gmail.com",
 			PasswordMustChange: true,
 			IsGuest:            true,
-			CreatedBy:          "SYSTEM",
-			UpdatedBy:          "SYSTEM",
+			CreatedByDB:        1,
+			UpdatedByDB:        1,
 		})).Return(nil).Times(1)
 
 		res, pass, err := uc.Create(ctx, &payloadentity.CreateUserPayload{
@@ -65,7 +65,7 @@ func Test_Create(t *testing.T) {
 			FullName: "Firman Darmawan",
 			Email:    "mvp.firman.darmawan@gmail.com",
 			IsGuest:  true,
-		}, &databaseentity.User{Username: "SYSTEM"})
+		}, &databaseentity.User{ID: 1})
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
 		assert.True(t, helper.ValidateEncryptedPassword(res.Password, pass))
@@ -125,6 +125,7 @@ func Test_Update(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		author := &databaseentity.User{
+			ID:       1,
 			Username: "gendutski",
 			FullName: "Firman Darmawan",
 			Email:    "gendutski@gmail.com",
@@ -137,7 +138,7 @@ func Test_Update(t *testing.T) {
 			FullName:           "Lord Firman Darmawan",
 			Email:              "mvp.firman.darmawan@gmail.com",
 			PasswordMustChange: false,
-			UpdatedBy:          "gendutski-1",
+			UpdatedByDB:        1,
 		})).Return(nil).Times(1)
 
 		err := uc.Update(ctx, &payloadentity.UpdateUserPayload{
@@ -166,11 +167,11 @@ func Test_Update(t *testing.T) {
 		}
 
 		err := uc.Update(ctx, &payloadentity.UpdateUserPayload{}, author)
-		assert.Nil(t, err)
-		assert.Equal(t,
-			[]string{"gendutski", "Firman Darmawan", "gendutski@gmail.com"},
-			[]string{author.Username, author.FullName, author.Email},
-		)
+		assert.NotNil(t, err)
+		herr, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusConflict, herr.Code)
+		assert.Equal(t, entity.UpdateUserNoChange, herr.Internal.(*entity.InternalError).Code)
 	})
 
 	t.Run("validator failed", func(t *testing.T) {
@@ -205,6 +206,7 @@ func Test_UpdateActiveStatus(t *testing.T) {
 	ctx := context.Background()
 
 	author := &databaseentity.User{
+		ID:       1,
 		Username: "gendutski",
 	}
 
@@ -216,10 +218,10 @@ func Test_UpdateActiveStatus(t *testing.T) {
 		}
 		userRepo.EXPECT().GetUserByField(ctx, "username", "other-user", 404).Return(currentUser, nil).Times(1)
 		userRepo.EXPECT().Update(ctx, CreateMatcher(&databaseentity.User{
-			Username:  "other-user",
-			Password:  "password",
-			Disabled:  true,
-			UpdatedBy: "gendutski",
+			Username:    "other-user",
+			Password:    "password",
+			Disabled:    true,
+			UpdatedByDB: author.ID,
 		})).Return(nil).Times(1)
 
 		res, err := uc.UpdateActiveStatus(ctx, &payloadentity.ActiveStatusPayload{
@@ -239,10 +241,10 @@ func Test_UpdateActiveStatus(t *testing.T) {
 		}
 		userRepo.EXPECT().GetUserByField(ctx, "username", "other-user", 404).Return(currentUser, nil).Times(1)
 		userRepo.EXPECT().Update(ctx, CreateMatcher(&databaseentity.User{
-			Username:  "other-user",
-			Password:  "password",
-			Disabled:  false,
-			UpdatedBy: "gendutski",
+			Username:    "other-user",
+			Password:    "password",
+			Disabled:    false,
+			UpdatedByDB: author.ID,
 		})).Return(nil).Times(1)
 
 		res, err := uc.UpdateActiveStatus(ctx, &payloadentity.ActiveStatusPayload{

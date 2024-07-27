@@ -95,6 +95,21 @@ func (mr *MockUserRepositoryMockRecorder) GetUsersByRequest(ctx, req interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersByRequest", reflect.TypeOf((*MockUserRepository)(nil).GetUsersByRequest), ctx, req)
 }
 
+// MapUserUsername mocks base method.
+func (m *MockUserRepository) MapUserUsername(ctx context.Context, userIDs interface{}) (map[int]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MapUserUsername", ctx, userIDs)
+	ret0, _ := ret[0].(map[int]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MapUserUsername indicates an expected call of MapUserUsername.
+func (mr *MockUserRepositoryMockRecorder) MapUserUsername(ctx, userIDs interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MapUserUsername", reflect.TypeOf((*MockUserRepository)(nil).MapUserUsername), ctx, userIDs)
+}
+
 // Update mocks base method.
 func (m *MockUserRepository) Update(ctx context.Context, user *databaseentity.User) error {
 	m.ctrl.T.Helper()

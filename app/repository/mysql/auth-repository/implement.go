@@ -91,7 +91,7 @@ func (r *repo) DoRenewPassword(ctx context.Context, user *databaseentity.User, p
 
 	user.Password = encryptPassword
 	user.PasswordMustChange = false
-	user.UpdatedByDB = user.ID
+	user.UpdatedBy = user.ID
 	err = r.db.Save(user).Error
 	if err != nil {
 		return &echo.HTTPError{

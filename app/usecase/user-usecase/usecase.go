@@ -66,8 +66,8 @@ func (uc *usecase) Create(ctx context.Context, payload *payloadentity.CreateUser
 		PasswordMustChange: true,
 		IsGuest:            payload.IsGuest,
 		Token:              token,
-		CreatedByDB:        author.ID,
-		UpdatedByDB:        author.ID,
+		CreatedBy:          author.ID,
+		UpdatedBy:          author.ID,
 	}
 
 	// save
@@ -86,9 +86,6 @@ func (uc *usecase) GetUserList(ctx context.Context, req *payloadentity.GetUserLi
 }
 
 func (uc *usecase) GetTotalUserList(ctx context.Context, req *payloadentity.GetUserListRequest) (int64, error) {
-	if req.Page < 1 {
-		req.Page = 1
-	}
 	return uc.userRepo.GetTotalUsersByRequest(ctx, req)
 }
 
@@ -142,7 +139,7 @@ func (uc *usecase) Update(ctx context.Context, payload *payloadentity.UpdateUser
 		isModified = true
 	}
 	if isModified {
-		author.UpdatedByDB = author.ID
+		author.UpdatedBy = author.ID
 		return uc.userRepo.Update(ctx, author)
 	}
 	return &echo.HTTPError{
@@ -184,7 +181,7 @@ func (uc *usecase) UpdateActiveStatus(ctx context.Context, payload *payloadentit
 
 	// update user
 	user.Disabled = payload.Disabled
-	user.UpdatedByDB = author.ID
+	user.UpdatedBy = author.ID
 	err = uc.userRepo.Update(ctx, user)
 	if err != nil {
 		return nil, err

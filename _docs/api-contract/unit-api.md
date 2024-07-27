@@ -110,7 +110,7 @@
         "name": "<string>",
     }
     ```
-    - Ok Response:
+    - Ok Response (204):
     ```json
     {
         "status": "ok",

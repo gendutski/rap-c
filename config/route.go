@@ -30,6 +30,10 @@ type Route struct {
 	CreateUserAPI           routeDetail `method:"POST" path:"/api/user/create"`
 	UpdateUserAPI           routeDetail `method:"PUT" path:"/api/user/update"`
 	SetStatusUserAPI        routeDetail `method:"PUT" path:"/api/user/active-status"`
+	ListUnitAPI             routeDetail `method:"GET" path:"/api/unit/list"`
+	TotalUnitAPI            routeDetail `method:"GET" path:"/api/unit/total"`
+	CreateUnitAPI           routeDetail `method:"POST" path:"/api/unit/create"`
+	DeleteUnitAPI           routeDetail `method:"DELETE" path:"/api/unit/delete"`
 
 	// web
 	LoginWebPage              routeDetail `method:"GET" path:"/login"`

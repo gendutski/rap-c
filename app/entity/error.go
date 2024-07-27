@@ -46,6 +46,8 @@ const (
 	ResetPasswordRequestNotFoundMessage string = "request reset password not found"
 	SearchSingleUserNotFOund            int    = 404002
 	SearchSingleUserNotFOundMessage     string = "user with `%s` = `%s` not found"
+	UnitNameNotFound                    int    = 404003
+	UnitNameNotFoundMessage             string = "unit measurement `%s` not found"
 
 	// conflict
 	UpdateUserNoChange        int    = 409001
@@ -65,6 +67,12 @@ const (
 	UserRepoGetTotalUsersByRequestError int = 5000204
 	UserRepoGetUsersByRequestError      int = 5000205
 	UserRepoMapUserUsernameError        int = 5000206
+	// unit repository
+	UnitRepoCreateError                 int = 5000301
+	UnitRepoGetUnitByNameError          int = 5000302
+	UnitRepoGetTotalUnitsByRequestError int = 5000303
+	UnitRepoGetUnitsByRequestError      int = 5000304
+	UnitRepoDeleteError                 int = 5000305
 	// auth usecase
 	AuthUsecaseGenerateJwtTokenError int = 5003001
 	AuthUsecaseValidateJwtTokenError int = 5003002
@@ -73,6 +81,7 @@ const (
 	MailUsecaseGeneratePlainTextError int = 5003102
 	// formatter usecase
 	FormatterUsecaseFormatUserError int = 5003201
+	FormatterUsecaseFormatUnitError int = 5003202
 	// session usecase
 	SessionUsecaseTokenInvalidType  int = 5003201
 	SessionUsecaseErrorInvalidType  int = 5003202

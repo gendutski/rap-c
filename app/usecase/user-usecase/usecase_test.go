@@ -35,8 +35,8 @@ func Test_Create(t *testing.T) {
 			FullName:           "Firman Darmawan",
 			Email:              "mvp.firman.darmawan@gmail.com",
 			PasswordMustChange: true,
-			CreatedByDB:        1,
-			UpdatedByDB:        1,
+			CreatedBy:          1,
+			UpdatedBy:          1,
 		})).Return(nil).Times(1)
 
 		res, pass, err := uc.Create(ctx, &payloadentity.CreateUserPayload{
@@ -56,8 +56,8 @@ func Test_Create(t *testing.T) {
 			Email:              "mvp.firman.darmawan@gmail.com",
 			PasswordMustChange: true,
 			IsGuest:            true,
-			CreatedByDB:        1,
-			UpdatedByDB:        1,
+			CreatedBy:          1,
+			UpdatedBy:          1,
 		})).Return(nil).Times(1)
 
 		res, pass, err := uc.Create(ctx, &payloadentity.CreateUserPayload{
@@ -138,7 +138,7 @@ func Test_Update(t *testing.T) {
 			FullName:           "Lord Firman Darmawan",
 			Email:              "mvp.firman.darmawan@gmail.com",
 			PasswordMustChange: false,
-			UpdatedByDB:        1,
+			UpdatedBy:          1,
 		})).Return(nil).Times(1)
 
 		err := uc.Update(ctx, &payloadentity.UpdateUserPayload{
@@ -218,10 +218,10 @@ func Test_UpdateActiveStatus(t *testing.T) {
 		}
 		userRepo.EXPECT().GetUserByField(ctx, "username", "other-user", 404).Return(currentUser, nil).Times(1)
 		userRepo.EXPECT().Update(ctx, CreateMatcher(&databaseentity.User{
-			Username:    "other-user",
-			Password:    "password",
-			Disabled:    true,
-			UpdatedByDB: author.ID,
+			Username:  "other-user",
+			Password:  "password",
+			Disabled:  true,
+			UpdatedBy: author.ID,
 		})).Return(nil).Times(1)
 
 		res, err := uc.UpdateActiveStatus(ctx, &payloadentity.ActiveStatusPayload{
@@ -241,10 +241,10 @@ func Test_UpdateActiveStatus(t *testing.T) {
 		}
 		userRepo.EXPECT().GetUserByField(ctx, "username", "other-user", 404).Return(currentUser, nil).Times(1)
 		userRepo.EXPECT().Update(ctx, CreateMatcher(&databaseentity.User{
-			Username:    "other-user",
-			Password:    "password",
-			Disabled:    false,
-			UpdatedByDB: author.ID,
+			Username:  "other-user",
+			Password:  "password",
+			Disabled:  false,
+			UpdatedBy: author.ID,
 		})).Return(nil).Times(1)
 
 		res, err := uc.UpdateActiveStatus(ctx, &payloadentity.ActiveStatusPayload{

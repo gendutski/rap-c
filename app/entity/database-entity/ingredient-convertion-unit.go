@@ -13,9 +13,7 @@ type IngredientConvertionUnit struct {
 	Value         float32     `gorm:"not null;type:decimal(10,2);default:0" json:"value"`
 	SkipCalculate bool        `gorm:"not null;default:0" json:"skipCalculate"`
 	CreatedAt     time.Time   `gorm:"type:timestamp;default:CURRENT_TIMESTAMP;not null" json:"createdAt"`
-	CreatedByDB   int         `gorm:"column:created_by;not null;default:0" json:"-"`
-	CreatedBy     string      `gorm:"-" json:"createdBy"`
+	CreatedBy     int         `gorm:"column:created_by;not null;default:0" json:"-"`
 	UpdatedAt     time.Time   `gorm:"type:timestamp;default:CURRENT_TIMESTAMP;not null" json:"updatedAt"`
-	UpdatedByDB   int         `gorm:"column:updated_by;not null;default:0" json:"-"`
-	UpdatedBy     string      `gorm:"-" json:"updatedBy"`
+	UpdatedBy     int         `gorm:"column:updated_by;not null;default:0" json:"-"`
 }

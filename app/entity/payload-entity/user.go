@@ -10,7 +10,7 @@ type GetUserDetailRequest struct {
 
 // bind struct for get user list request
 type GetUserListRequest struct {
-	UserName        string            `query:"username" json:"username"`
+	Username        string            `query:"username" json:"username"`
 	Email           string            `query:"email" json:"email"`
 	FullName        string            `query:"fullName" json:"fullName"`
 	Show            string            `query:"show" json:"show"`

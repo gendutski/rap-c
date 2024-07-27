@@ -133,7 +133,7 @@ func (r *repo) GetUsersByRequest(ctx context.Context, req *payloadentity.GetUser
 	qry := r.renderUsersQuery(req)
 	// validate sort
 	validSort := map[string]string{
-		"username":  "user_name",
+		"username":  "username",
 		"fullName":  "full_name",
 		"email":     "email",
 		"role":      "role",
@@ -174,8 +174,12 @@ func (r *repo) MapUserUsername(ctx context.Context, payload interface{}) (map[in
 	var userIDs []int
 	switch users := payload.(type) {
 	case []*databaseentity.User:
-		for _, usr := range users {
-			userIDs = append(userIDs, usr.ID)
+		for _, itm := range users {
+			userIDs = append(userIDs, itm.ID)
+		}
+	case []*databaseentity.Unit:
+		for _, itm := range users {
+			userIDs = append(userIDs, itm.ID)
 		}
 	case *databaseentity.User:
 		userIDs = append(userIDs, users.ID)
@@ -207,8 +211,8 @@ func (r *repo) MapUserUsername(ctx context.Context, payload interface{}) (map[in
 
 func (r *repo) renderUsersQuery(req *payloadentity.GetUserListRequest) *gorm.DB {
 	qry := r.db
-	if req.UserName != "" {
-		qry = qry.Where("user_name = ?", req.UserName)
+	if req.Username != "" {
+		qry = qry.Where("username = ?", req.Username)
 	}
 	if req.Email != "" {
 		qry = qry.Where("email like ?", fmt.Sprintf("%%%s%%", req.Email))

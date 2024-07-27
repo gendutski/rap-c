@@ -18,6 +18,7 @@ type APIHandler struct {
 	AuthUsecase contract.AuthUsecase
 	AuthAPI     api.AuthAPI
 	UserAPI     api.UserAPI
+	UnitAPI     api.UnitAPI
 }
 
 func SetAPIRoute(e *echo.Echo, h *APIHandler) {
@@ -38,6 +39,7 @@ func SetAPIRoute(e *echo.Echo, h *APIHandler) {
 	// set api
 	h.setAuthAPI(e, nonGuestOnly)
 	h.setUserAPI(e, allLoginRole, nonGuestOnly)
+	h.setUnitAPI(e, allLoginRole, nonGuestOnly)
 }
 
 func (h *APIHandler) setAuthAPI(e *echo.Echo, nonGuestOnly []echo.MiddlewareFunc) {
@@ -69,6 +71,20 @@ func (h *APIHandler) setUserAPI(e *echo.Echo, allLoginRole []echo.MiddlewareFunc
 	e.Add(h.Route.UpdateUserAPI.Method(), h.Route.UpdateUserAPI.Path(), h.UserAPI.Update, nonGuestOnly...)
 	// update user active status
 	e.Add(h.Route.SetStatusUserAPI.Method(), h.Route.SetStatusUserAPI.Path(), h.UserAPI.SetActiveStatusUser, nonGuestOnly...)
+}
+
+func (h *APIHandler) setUnitAPI(e *echo.Echo, allLoginRole []echo.MiddlewareFunc, nonGuestOnly []echo.MiddlewareFunc) {
+	// all user
+	// unit list
+	e.Add(h.Route.ListUnitAPI.Method(), h.Route.ListUnitAPI.Path(), h.UnitAPI.GetUnitList, allLoginRole...)
+	// unit list total
+	e.Add(h.Route.TotalUnitAPI.Method(), h.Route.TotalUnitAPI.Path(), h.UnitAPI.GetTotalUnitList, allLoginRole...)
+
+	// non guest
+	// create new unit
+	e.Add(h.Route.CreateUnitAPI.Method(), h.Route.CreateUnitAPI.Path(), h.UnitAPI.Create, nonGuestOnly...)
+	// delete not used unit
+	e.Add(h.Route.DeleteUnitAPI.Method(), h.Route.DeleteUnitAPI.Path(), h.UnitAPI.Delete, nonGuestOnly...)
 }
 
 // error handler

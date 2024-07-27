@@ -11,11 +11,13 @@ import (
 	"rap-c/app/handler/web"
 	"rap-c/app/helper"
 	authrepository "rap-c/app/repository/mysql/auth-repository"
+	unitrepository "rap-c/app/repository/mysql/unit-repository"
 	userrepository "rap-c/app/repository/mysql/user-repository"
 	authusecase "rap-c/app/usecase/auth-usecase"
 	formatterusecase "rap-c/app/usecase/formatter-usecase"
 	mailusecase "rap-c/app/usecase/mail-usecase"
 	sessionusecase "rap-c/app/usecase/session-usecase"
+	unitusecase "rap-c/app/usecase/unit-usecase"
 	userusecase "rap-c/app/usecase/user-usecase"
 	"rap-c/config"
 	"rap-c/route"
@@ -54,20 +56,23 @@ func serve() {
 	// load mysql repositories
 	authRepo := authrepository.New(db)
 	userRepo := userrepository.New(db)
+	unitRepo := unitrepository.New(db)
 
 	// load session store
 	sessionStore := sessions.NewCookieStore([]byte(cfg.SessionKey()))
 
 	// load modules
+	formatterUsecase := formatterusecase.NewUsecase(cfg, userRepo)
 	authUsecase := authusecase.NewUsecase(cfg, authRepo)
 	userUsecase := userusecase.NewUsecase(cfg, userRepo)
 	mailUsecase := mailusecase.NewUsecase(cfg, router)
 	sessionUsecase := sessionusecase.NewUsecase(cfg, router, sessionStore, authUsecase)
-	formatterUsecase := formatterusecase.NewUsecase(cfg, userRepo)
+	unitUsecase := unitusecase.NewUsecase(cfg, unitRepo)
 
 	// load api handler
 	authAPI := api.NewAuthHandler(cfg, router, authUsecase, mailUsecase)
 	userAPI := api.NewUserHandler(cfg, router, userUsecase, formatterUsecase, mailUsecase)
+	unitAPI := api.NewUnitHandler(cfg, router, unitUsecase, formatterUsecase)
 
 	// load web handler
 	authWeb := web.NewAuthPage(cfg, router, authUsecase, sessionUsecase, mailUsecase)
@@ -102,6 +107,7 @@ func serve() {
 		AuthUsecase: authUsecase,
 		AuthAPI:     authAPI,
 		UserAPI:     userAPI,
+		UnitAPI:     unitAPI,
 	})
 	// set web page route
 	route.SetWebRoute(e, &route.WebHandler{

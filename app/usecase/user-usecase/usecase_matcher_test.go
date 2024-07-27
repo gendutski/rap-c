@@ -38,10 +38,10 @@ func (r *createMatcher) Matches(x interface{}) bool {
 	if req.IsGuest != r.expected.IsGuest {
 		return false
 	}
-	if req.CreatedByDB != r.expected.CreatedByDB {
+	if req.CreatedBy != r.expected.CreatedBy {
 		return false
 	}
-	if req.UpdatedByDB != r.expected.UpdatedByDB {
+	if req.UpdatedBy != r.expected.UpdatedBy {
 		return false
 	}
 	// validate password, password is auto generated, so check if not empty only

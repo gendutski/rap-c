@@ -1,6 +1,6 @@
 # User API Contract
 
-1. Get User By Username<br>
+1. Get User By Username
     - Path: **/api/user/detail/{username}**
     - Method: **Get** 
     - Authorization: **Bearer <token>**
@@ -32,13 +32,6 @@
             }
         }
         ```
-        - User password must be changed (http status 403)
-        ```json
-            {
-                "code": 403003,
-                "message": "the password must be changed"
-            }
-        ```
         - User not found (http status 404)
         ```json
         {
@@ -46,7 +39,7 @@
             "message": "user with `username` = `<string>` not found"
         }
 
-2. Get User List<br>
+2. Get User List
     List of users that will be sorted based on the fields entered in sortField(default `createdAt`) in `asc` or `desc` (if `descendingOrder` = `true`)
     - Path: **/api/user/list**
     - Method: **Get** 
@@ -94,7 +87,7 @@
     }
     ```
 
-3. Get User Total<br>
+3. Get User Total
     Total users based on request
     - Path: **/api/user/total**
     - Method: **Get** 
@@ -179,6 +172,20 @@
                     {"tag": "username", "param": ""}
                 ]
             }
+        }
+        ```
+        - User duplicate email (http status 400)
+        ```json
+        {
+            "code": 400001,
+            "message": "duplicate email, email '<email>` is already in use"
+        }
+        ```
+        - User duplicate username (http status 400)
+        ```json
+        {
+            "code": 400002,
+            "message": "duplicate username, username '<username>` is already in use"
         }
         ```
 

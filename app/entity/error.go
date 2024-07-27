@@ -14,6 +14,8 @@ const (
 	DeactivatingInActiveUserMessage           string = "try deactivating inactive users"
 	ActivatingActiveUser                      int    = 400005
 	ActivatingActiveUserMessage               string = "try activating active users"
+	CreateUnitNameDuplicate                   int    = 400006
+	CreateUnitNameDuplicateMessage            string = "duplicate unit name, `%s` is already in use"
 	ValidatorBadRequest                       int    = 400999
 	ValidatorBadRequestMessage                string = "bad request, validator failed"
 
@@ -36,6 +38,8 @@ const (
 	GuestTokenForbiddenMessage         string = "guest token is forbidden"
 	MustChangePasswordForbidden        int    = 403003
 	MustChangePasswordForbiddenMessage string = "the password must be changed"
+	DeleteUsedUnitForbidden            int    = 403004
+	DeleteUsedUnitForbiddenMessage     string = "cannot delete used units"
 
 	// not found
 	ResetPasswordRequestNotFound        int    = 404001
